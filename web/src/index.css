@@ -1,0 +1,95 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap');
+
+@theme inline {
+  --color-background: var(--color-background);
+  --color-surface: var(--color-surface);
+  --color-surface-hover: var(--color-surfaceHover);
+  --color-accent: var(--color-accent);
+  --color-accent-hover: var(--color-accentHover);
+  --color-text: var(--color-text);
+  --color-text-muted: var(--color-textMuted);
+  --color-text-faint: var(--color-textFaint);
+  --color-border: var(--color-border);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  font-family: 'EB Garamond', Georgia, serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(1.04); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.anim-fade-up  { animation: fadeUp  0.9s cubic-bezier(0.16,1,0.3,1) both; }
+.anim-fade-in  { animation: fadeIn  1.2s ease both; }
+.anim-scale-in { animation: scaleIn 1.4s cubic-bezier(0.16,1,0.3,1) both; }
+
+.d1 { animation-delay: 0.05s; }
+.d2 { animation-delay: 0.2s;  }
+.d3 { animation-delay: 0.38s; }
+.d4 { animation-delay: 0.55s; }
+.d5 { animation-delay: 0.72s; }
+.d6 { animation-delay: 0.9s;  }
+
+.card-hover {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+}
+
+.btn-primary {
+  background: var(--color-accent);
+  color: #0D1117;
+  font-family: 'EB Garamond', serif;
+  font-size: 0.8rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 0.9rem 2.6rem;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.btn-primary:hover { background: var(--color-accentHover, #dbbe6a); }
+
+.btn-outline {
+  background: transparent;
+  color: var(--color-accent);
+  font-family: 'EB Garamond', serif;
+  font-size: 0.8rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 0.85rem 2.2rem;
+  border: 1px solid var(--color-accent);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.btn-outline:hover {
+  background: var(--color-accent);
+  color: #0D1117;
+}

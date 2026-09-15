@@ -1,0 +1,14 @@
+{
+  "name": "gauss",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:web\" \"npm run dev:studio\"",
+    "dev:web": "npm run dev --prefix web",
+    "dev:studio": "npm run dev --prefix studio",
+    "build:web": "npm run build --prefix web",
+    "build:studio": "npm run build --prefix studio"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
+}

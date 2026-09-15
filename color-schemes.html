@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gauß App — Farbschema Vergleich</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Lato:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Lato', sans-serif;
+      background: #1a1a1a;
+      color: #fff;
+      padding: 2rem;
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      color: #fff;
+    }
+    .subtitle {
+      text-align: center;
+      color: #888;
+      margin-bottom: 3rem;
+      font-size: 0.9rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .scheme {
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    }
+
+    /* ── A: Prussian Scholar ── */
+    .scheme-a {
+      background: #0D1117;
+      color: #F0E9D6;
+    }
+    .scheme-a .header { background: #1A3A5C; padding: 2rem; }
+    .scheme-a .header h2 { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: #F0E9D6; }
+    .scheme-a .header .tag { font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; color: #C9A84C; margin-bottom: 0.5rem; }
+    .scheme-a .body { padding: 2rem; }
+    .scheme-a .label { font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: #C9A84C; margin-bottom: 0.4rem; }
+    .scheme-a .hero-text { font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 900; line-height: 1.1; margin-bottom: 1rem; color: #F0E9D6; }
+    .scheme-a .body p { font-size: 0.9rem; line-height: 1.7; color: #a09880; margin-bottom: 1.5rem; }
+    .scheme-a .btn { display: inline-block; background: #C9A84C; color: #0D1117; padding: 0.6rem 1.4rem; border-radius: 4px; font-size: 0.85rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; }
+    .scheme-a .swatches { display: flex; gap: 0.5rem; margin-top: 1.5rem; }
+    .swatch { width: 40px; height: 40px; border-radius: 6px; }
+    .scheme-a .s1 { background: #0D1117; border: 1px solid #333; }
+    .scheme-a .s2 { background: #1A3A5C; }
+    .scheme-a .s3 { background: #C9A84C; }
+    .scheme-a .s4 { background: #F0E9D6; }
+
+    /* ── B: Parchment & Ink ── */
+    .scheme-b {
+      background: #F5EFE0;
+      color: #1A1208;
+    }
+    .scheme-b .header { background: #2C1810; padding: 2rem; }
+    .scheme-b .header h2 { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: #F5EFE0; }
+    .scheme-b .header .tag { font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; color: #D4956A; margin-bottom: 0.5rem; }
+    .scheme-b .body { padding: 2rem; }
+    .scheme-b .label { font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: #8B1A1A; margin-bottom: 0.4rem; }
+    .scheme-b .hero-text { font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 900; line-height: 1.1; margin-bottom: 1rem; color: #2C1810; }
+    .scheme-b .body p { font-size: 0.9rem; line-height: 1.7; color: #6B5A48; margin-bottom: 1.5rem; }
+    .scheme-b .btn { display: inline-block; background: #8B1A1A; color: #F5EFE0; padding: 0.6rem 1.4rem; border-radius: 4px; font-size: 0.85rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; }
+    .scheme-b .swatches { display: flex; gap: 0.5rem; margin-top: 1.5rem; }
+    .scheme-b .s1 { background: #F5EFE0; border: 1px solid #ccc; }
+    .scheme-b .s2 { background: #2C1810; }
+    .scheme-b .s3 { background: #8B1A1A; }
+    .scheme-b .s4 { background: #1A1208; }
+
+    /* ── C: Mathematical Void ── */
+    .scheme-c {
+      background: #0A0A0A;
+      color: #E8E8E8;
+    }
+    .scheme-c .header { background: #111; padding: 2rem; border-bottom: 1px solid #1e1e1e; }
+    .scheme-c .header h2 { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: #fff; }
+    .scheme-c .header .tag { font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; color: #4FFFB0; margin-bottom: 0.5rem; }
+    .scheme-c .body { padding: 2rem; }
+    .scheme-c .label { font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: #4FFFB0; margin-bottom: 0.4rem; }
+    .scheme-c .hero-text { font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 900; line-height: 1.1; margin-bottom: 1rem; color: #fff; }
+    .scheme-c .body p { font-size: 0.9rem; line-height: 1.7; color: #666; margin-bottom: 1.5rem; }
+    .scheme-c .btn { display: inline-block; background: transparent; color: #4FFFB0; padding: 0.6rem 1.4rem; border: 1px solid #4FFFB0; border-radius: 4px; font-size: 0.85rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; }
+    .scheme-c .swatches { display: flex; gap: 0.5rem; margin-top: 1.5rem; }
+    .scheme-c .s1 { background: #0A0A0A; border: 1px solid #333; }
+    .scheme-c .s2 { background: #FFFFFF; }
+    .scheme-c .s3 { background: #4FFFB0; }
+    .scheme-c .s4 { background: #E8E8E8; }
+
+    /* ── D: Göttingen Green ── */
+    .scheme-d {
+      background: #111A14;
+      color: #EDE8DC;
+    }
+    .scheme-d .header { background: #1E3A2A; padding: 2rem; }
+    .scheme-d .header h2 { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: #EDE8DC; }
+    .scheme-d .header .tag { font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; color: #D4AF37; margin-bottom: 0.5rem; }
+    .scheme-d .body { padding: 2rem; }
+    .scheme-d .label { font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: #D4AF37; margin-bottom: 0.4rem; }
+    .scheme-d .hero-text { font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 900; line-height: 1.1; margin-bottom: 1rem; color: #EDE8DC; }
+    .scheme-d .body p { font-size: 0.9rem; line-height: 1.7; color: #8a9e8d; margin-bottom: 1.5rem; }
+    .scheme-d .btn { display: inline-block; background: #D4AF37; color: #111A14; padding: 0.6rem 1.4rem; border-radius: 4px; font-size: 0.85rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; }
+    .scheme-d .swatches { display: flex; gap: 0.5rem; margin-top: 1.5rem; }
+    .scheme-d .s1 { background: #111A14; border: 1px solid #333; }
+    .scheme-d .s2 { background: #1E3A2A; }
+    .scheme-d .s3 { background: #D4AF37; }
+    .scheme-d .s4 { background: #EDE8DC; }
+
+    .scheme-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    @media (max-width: 800px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Gauß App — Farbschema</h1>
+  <p class="subtitle">Vier Optionen zum Vergleich</p>
+
+  <div class="grid">
+
+    <!-- A -->
+    <div class="scheme scheme-a">
+      <div class="header">
+        <div class="tag">Option A</div>
+        <h2 class="scheme-name">Prussian Scholar</h2>
+      </div>
+      <div class="body">
+        <div class="label">Dunkel · Autoritär · Historisch</div>
+        <div class="hero-text">Lerne mit dem Princeps Mathematicorum</div>
+        <p>Museumsqualität und historische Gravitas. Preußisches Blau mit Goldakzenten — ernst, elegant, zeitlos.</p>
+        <div class="btn">Jetzt starten</div>
+        <div class="swatches">
+          <div class="swatch s1"></div>
+          <div class="swatch s2"></div>
+          <div class="swatch s3"></div>
+          <div class="swatch s4"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- B -->
+    <div class="scheme scheme-b">
+      <div class="header">
+        <div class="tag">Option B</div>
+        <h2 class="scheme-name">Parchment & Tinte</h2>
+      </div>
+      <div class="body">
+        <div class="label">Hell · Klassisch · Akademisch</div>
+        <div class="hero-text">Lerne mit dem Princeps Mathematicorum</div>
+        <p>Alte Manuskripte und Universitätsbibliotheken. Pergament und Tinte — warm, lesbar, klassisch-elegant.</p>
+        <div class="btn">Jetzt starten</div>
+        <div class="swatches">
+          <div class="swatch s1"></div>
+          <div class="swatch s2"></div>
+          <div class="swatch s3"></div>
+          <div class="swatch s4"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- C -->
+    <div class="scheme scheme-c">
+      <div class="header">
+        <div class="tag">Option C</div>
+        <h2 class="scheme-name">Mathematical Void</h2>
+      </div>
+      <div class="body">
+        <div class="label">Schwarz · Modern · Kontrastreich</div>
+        <div class="hero-text">Lerne mit dem Princeps Mathematicorum</div>
+        <p>Radikal modern und wissenschaftlich präzise. Reines Schwarz mit elektrischem Mint — scharf, mutig, unvergesslich.</p>
+        <div class="btn">Jetzt starten</div>
+        <div class="swatches">
+          <div class="swatch s1"></div>
+          <div class="swatch s2"></div>
+          <div class="swatch s3"></div>
+          <div class="swatch s4"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- D -->
+    <div class="scheme scheme-d">
+      <div class="header">
+        <div class="tag">Option D</div>
+        <h2 class="scheme-name">Göttinger Grün</h2>
+      </div>
+      <div class="body">
+        <div class="label">Dunkel · Warm · Eigenständig</div>
+        <div class="hero-text">Lerne mit dem Princeps Mathematicorum</div>
+        <p>Tiefer Forst trifft auf Antiquitätengold. Akademisch und natürlich — unverwechselbar und geerdet.</p>
+        <div class="btn">Jetzt starten</div>
+        <div class="swatches">
+          <div class="swatch s1"></div>
+          <div class="swatch s2"></div>
+          <div class="swatch s3"></div>
+          <div class="swatch s4"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
