@@ -15,6 +15,7 @@ interface SanityQuestion {
   question: string
   type: 'text' | 'multiplechoice' | 'sort' | 'guess' | 'yesno'
   options?: SanityOption[]
+  multipleCorrect?: boolean
   sortItems?: string[]
   correctNumber?: number
   rangeMin?: number
@@ -138,6 +139,7 @@ export default function LecturePage() {
           questions[]-> {
             _id, question, type,
             options[] { _key, label, correct },
+            multipleCorrect,
             sortItems,
             correctNumber, rangeMin, rangeMax,
             correctAnswer
@@ -406,6 +408,7 @@ function QuestionView({
             options={question.options ?? []}
             selected={(raw as string[]) ?? []}
             revealed={revealed}
+            multipleCorrect={question.multipleCorrect ?? false}
             onChange={onChange}
           />
         )}
@@ -533,24 +536,28 @@ function MultipleChoice({
   options,
   selected,
   revealed,
+  multipleCorrect,
   onChange,
 }: {
   options: SanityOption[]
   selected: string[]
   revealed: boolean
+  multipleCorrect: boolean
   onChange: (v: string[]) => void
 }) {
   function toggle(key: string) {
     if (revealed) return
-    const next = selected.includes(key) ? selected.filter((k) => k !== key) : [...selected, key]
-    onChange(next)
+    if (multipleCorrect) {
+      const next = selected.includes(key) ? selected.filter((k) => k !== key) : [...selected, key]
+      onChange(next)
+    } else {
+      onChange([key])
+    }
   }
-
-  const multiCorrect = options.filter((o) => o.correct).length > 1
 
   return (
     <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
-      {multiCorrect && (
+      {multipleCorrect && (
         <p style={{fontSize: '0.8rem', ...S.faint, marginBottom: '0.25rem', letterSpacing: '0.04em'}}>
           Mehrere Antworten möglich
         </p>
@@ -599,9 +606,9 @@ function MultipleChoice({
               style={{
                 width: '18px',
                 height: '18px',
-                borderRadius: '2px',
+                borderRadius: multipleCorrect ? '2px' : '50%',
                 border: `1px solid ${isSelected || showCorrect ? 'var(--color-accent)' : 'var(--color-border)'}`,
-                background: isSelected ? 'var(--color-accent)' : 'transparent',
+                background: multipleCorrect && isSelected ? 'var(--color-accent)' : 'transparent',
                 flexShrink: 0,
                 display: 'flex',
                 alignItems: 'center',
@@ -609,31 +616,58 @@ function MultipleChoice({
                 transition: 'background 0.15s, border-color 0.15s',
               }}
             >
-              {isSelected && (
-                <svg
-                  width="10"
-                  height="10"
-                  viewBox="0 0 10 10"
-                  fill="none"
-                  stroke="#0D1117"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                >
-                  <path d="M1.5 5l2.5 2.5 4.5-4.5" />
-                </svg>
-              )}
-              {showCorrect && !isSelected && (
-                <svg
-                  width="10"
-                  height="10"
-                  viewBox="0 0 10 10"
-                  fill="none"
-                  stroke="rgb(134,239,172)"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                >
-                  <path d="M1.5 5l2.5 2.5 4.5-4.5" />
-                </svg>
+              {multipleCorrect ? (
+                <>
+                  {isSelected && (
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 10 10"
+                      fill="none"
+                      stroke="#0D1117"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    >
+                      <path d="M1.5 5l2.5 2.5 4.5-4.5" />
+                    </svg>
+                  )}
+                  {showCorrect && !isSelected && (
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 10 10"
+                      fill="none"
+                      stroke="rgb(134,239,172)"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    >
+                      <path d="M1.5 5l2.5 2.5 4.5-4.5" />
+                    </svg>
+                  )}
+                </>
+              ) : (
+                <>
+                  {isSelected && (
+                    <span
+                      style={{
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        background: 'var(--color-accent)',
+                      }}
+                    />
+                  )}
+                  {showCorrect && !isSelected && (
+                    <span
+                      style={{
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        background: 'rgb(134,239,172)',
+                      }}
+                    />
+                  )}
+                </>
               )}
             </span>
             {opt.label}

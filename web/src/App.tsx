@@ -84,9 +84,21 @@ export default function App() {
         <span style={{ fontSize: '1.35rem', fontWeight: 700, letterSpacing: '0.2em', ...S.display }}>
           GAUSS
         </span>
-        <button className="btn-outline" style={{ padding: '0.4rem 1rem', fontSize: '0.7rem' }}>
-          Anmelden
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
+          <button
+            onClick={() => navigate('/spiel')}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              fontSize: '0.7rem', letterSpacing: '0.12em', textTransform: 'uppercase',
+              ...S.accent, opacity: 0.85,
+            }}
+          >
+            Spiel (Beta)
+          </button>
+          <button className="btn-outline" style={{ padding: '0.4rem 1rem', fontSize: '0.7rem' }}>
+            Anmelden
+          </button>
+        </div>
       </nav>
 
       {/* ── HERO ── */}

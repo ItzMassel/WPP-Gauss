@@ -28,6 +28,15 @@ export const question = defineType({
       validation: (Rule) => Rule.required(),
     }),
     defineField({
+      name: 'multipleCorrect',
+      title: 'Mehrere richtige Antworten möglich?',
+      type: 'boolean',
+      initialValue: false,
+      description:
+        'Nicht angehakt = nur eine Antwort auswählbar (Radio-Button). Angehakt = mehrere Antworten auswählbar (Checkbox).',
+      hidden: ({document}) => document?.type !== 'multiplechoice',
+    }),
+    defineField({
       name: 'options',
       title: 'Antwortoptionen',
       type: 'array',
