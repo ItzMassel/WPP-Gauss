@@ -16,7 +16,7 @@ const RUN_FRAME_RATE = 10
 /** Sichtbare Höhe der Grafik, etwas größer als die Hitbox, damit Gauß nicht gestaucht wirkt. */
 const VISUAL_HEIGHT = PLAYER_HEIGHT * 1.2
 /** Sichtbare Anhebung ggü. der Hitbox, damit Gauß auf dem Gras steht statt darin zu versinken. */
-const VISUAL_LIFT = 10
+const VISUAL_LIFT = 2
 
 export class Player {
   /** Unsichtbare Hitbox, treibt die komplette Physik — von der Grafik komplett entkoppelt. */
