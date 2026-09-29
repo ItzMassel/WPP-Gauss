@@ -11,31 +11,53 @@ import {
 
 export type PlayerState = 'run' | 'jump' | 'hecht'
 
-// Platzhalter-Farben, bis echte Sprites geliefert werden.
-const COLOR: Record<PlayerState, number> = {
-  run: 0x1a3a5c,
-  jump: 0x2a5a8c,
-  hecht: 0xc9a84c,
-}
+const RUN_ANIM_KEY = 'player-run'
+const RUN_FRAME_RATE = 10
+/** Sichtbare Höhe der Grafik, etwas größer als die Hitbox, damit Gauß nicht gestaucht wirkt. */
+const VISUAL_HEIGHT = PLAYER_HEIGHT * 1.2
+/** Sichtbare Anhebung ggü. der Hitbox, damit Gauß auf dem Gras steht statt darin zu versinken. */
+const VISUAL_LIFT = 10
 
 export class Player {
+  /** Unsichtbare Hitbox, treibt die komplette Physik — von der Grafik komplett entkoppelt. */
   readonly rect: Phaser.GameObjects.Rectangle
   readonly body: Phaser.Physics.Arcade.Body
   state: PlayerState = 'run'
 
   private readonly scene: Phaser.Scene
   private readonly groundTopY: number
+  private readonly sprite: Phaser.GameObjects.Sprite
 
   constructor(scene: Phaser.Scene, x: number, groundTopY: number) {
     this.scene = scene
     this.groundTopY = groundTopY
 
-    this.rect = scene.add.rectangle(x, groundTopY - PLAYER_HEIGHT / 2, PLAYER_WIDTH, PLAYER_HEIGHT, COLOR.run)
+    this.rect = scene.add.rectangle(x, groundTopY - PLAYER_HEIGHT / 2, PLAYER_WIDTH, PLAYER_HEIGHT, 0x000000, 0)
     scene.physics.add.existing(this.rect)
     this.body = this.rect.body as Phaser.Physics.Arcade.Body
     this.body.setGravityY(GRAVITY_Y)
     this.body.setSize(PLAYER_WIDTH, PLAYER_HEIGHT)
     this.body.setCollideWorldBounds(true)
+
+    if (!scene.anims.exists(RUN_ANIM_KEY)) {
+      scene.anims.create({
+        key: RUN_ANIM_KEY,
+        frames: [1, 2, 3, 4, 5].map((i) => ({key: `player-${i}`})),
+        frameRate: RUN_FRAME_RATE,
+        repeat: -1,
+      })
+    }
+
+    const frameImage = scene.textures.get('player-1').getSourceImage() as HTMLImageElement
+    const aspect = frameImage.width / frameImage.height
+
+    // Reine Deko-Grafik ohne eigene Physik — folgt der Hitbox in update().
+    this.sprite = scene.add.sprite(x, groundTopY, 'player-1').setOrigin(0.5, 1)
+    this.sprite.setDisplaySize(VISUAL_HEIGHT * aspect, VISUAL_HEIGHT)
+    this.sprite.setDepth(1) // vor Deko-Elementen wie den Pflanzen
+    // Läuft dauerhaft weiter, unabhängig von Sprung/Hecht — die Animation stoppt nie.
+    this.sprite.play(RUN_ANIM_KEY)
+    this.syncSprite()
   }
 
   get isGrounded(): boolean {
@@ -88,7 +110,13 @@ export class Player {
 
   private setState(state: PlayerState): void {
     this.state = state
-    this.rect.setFillStyle(COLOR[state])
+  }
+
+  /** Zieht die Deko-Grafik auf die aktuelle Hitbox-Position/-Rotation, mit leichtem Boden-Lift. */
+  private syncSprite(): void {
+    this.sprite.x = this.rect.x
+    this.sprite.y = this.rect.y + PLAYER_HEIGHT / 2 - VISUAL_LIFT
+    this.sprite.angle = this.rect.angle
   }
 
   update(): void {
@@ -99,5 +127,6 @@ export class Player {
       this.body.setAllowGravity(true)
       this.body.setSize(PLAYER_WIDTH, PLAYER_HEIGHT)
     }
+    this.syncSprite()
   }
 }

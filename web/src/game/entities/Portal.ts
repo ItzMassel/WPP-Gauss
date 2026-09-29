@@ -4,15 +4,16 @@ import {PORTAL_WIDTH, SCROLL_SPEED} from '../data/physics'
 const WIDTH = PORTAL_WIDTH
 const HEIGHT = 90
 
-// Platzhalter: pulsierender goldener Ring statt animiertem Sprite.
 export class Portal {
-  readonly rect: Phaser.GameObjects.Rectangle
+  readonly rect: Phaser.GameObjects.Image
   readonly body: Phaser.Physics.Arcade.Body
   solved = false
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    this.rect = scene.add.rectangle(x, y, WIDTH, HEIGHT, 0xc9a84c, 0.25)
-    this.rect.setStrokeStyle(3, 0xc9a84c, 1)
+    const portalImage = scene.textures.get('portal').getSourceImage() as HTMLImageElement
+    const aspect = portalImage.width / portalImage.height
+    this.rect = scene.add.image(x, y, 'portal')
+    this.rect.setDisplaySize(HEIGHT * aspect, HEIGHT)
     scene.physics.add.existing(this.rect)
     this.body = this.rect.body as Phaser.Physics.Arcade.Body
     this.body.setAllowGravity(false)

@@ -9,9 +9,16 @@ import {KNOCKBACK_DISTANCE, MAX_HP, SCROLL_SPEED, SPEED_ACCEL} from '../data/phy
 export const GAME_WIDTH = 800
 export const GAME_HEIGHT = 400
 const GROUND_HEIGHT = 48
+/** Grasstreifen an der Bodenoberkante; der Rest darunter ist die Erde-Textur. */
+const GRASS_STRIP_HEIGHT = 14
 const GROUND_TOP_Y = GAME_HEIGHT - GROUND_HEIGHT
 const PLAYER_X = 120
 const SPAWN_X = GAME_WIDTH + 40
+/** Höhe, auf die Deko-Pflanzen skaliert werden, sitzen mittig auf dem Grasstreifen. */
+const PLANT_HEIGHT = 38
+/** Zufälliger Abstand zwischen Deko-Pflanzen, in Sekunden. */
+const PLANT_GAP_MIN = 2.5
+const PLANT_GAP_MAX = 5.5
 /** Sekunden, die ein Hindernis vom Spawn am rechten Rand bis zum Spieler braucht. */
 const SPAWN_LEAD = (SPAWN_X - PLAYER_X) / SCROLL_SPEED
 
@@ -38,6 +45,9 @@ export class GameScene extends Phaser.Scene {
   private levelElapsed = 0
   private eventPointer = 0
 
+  private plants: Phaser.GameObjects.Image[] = []
+  private plantTimer = Phaser.Math.Between(PLANT_GAP_MIN * 1000, PLANT_GAP_MAX * 1000) / 1000
+
   private hp = MAX_HP
   /** Aktuelle Welt-/Laufgeschwindigkeit; sinkt bei einer Kollision auf 0 und beschleunigt wieder hoch. */
   private worldSpeed = SCROLL_SPEED
@@ -46,18 +56,40 @@ export class GameScene extends Phaser.Scene {
     super('GameScene')
   }
 
+  preload(): void {
+    this.load.image('grass', 'grass.jpg')
+    this.load.image('dirt', 'dirt.jpg')
+    this.load.image('plant', 'plant.png')
+    this.load.image('portal', 'portal.jpg')
+    for (let i = 1; i <= 5; i++) this.load.image(`player-${i}`, `player/${i}.png`)
+  }
+
   create(): void {
     this.cameras.main.setBackgroundColor(LEVELS[0].background)
 
-    // Boden: Platzhalter-Streifen statt Tile-Sprites (Gras oben, Erde darunter)
-    const groundY = GAME_HEIGHT - GROUND_HEIGHT / 2
-    const grass = this.add.rectangle(GAME_WIDTH / 2, groundY - GROUND_HEIGHT / 2 + 6, GAME_WIDTH * 2, 12, 0x3f7d3a)
-    const erde = this.add.rectangle(GAME_WIDTH / 2, groundY + 6, GAME_WIDTH * 2, GROUND_HEIGHT - 12, 0x5c4326)
+    // Boden: dünner Grasstreifen oben (nur der grüne Teil der grass.jpg-Textur),
+    // darunter die gekachelte dirt.jpg-Textur bis zum unteren Rand.
+    const grassImage = this.textures.get('grass').getSourceImage() as HTMLImageElement
+    const grassCropHeight = Math.round(grassImage.height * (160 / 639))
+    this.textures.get('grass').add('top', 0, 0, 0, grassImage.width, grassCropHeight)
+
+    const grassTileScale = GRASS_STRIP_HEIGHT / grassCropHeight
+    const grassY = GROUND_TOP_Y + GRASS_STRIP_HEIGHT / 2
+    const grassSprite = this.add.tileSprite(GAME_WIDTH / 2, grassY, GAME_WIDTH * 2, GRASS_STRIP_HEIGHT, 'grass', 'top')
+    grassSprite.setTileScale(grassTileScale, grassTileScale)
+
+    const dirtHeight = GROUND_HEIGHT - GRASS_STRIP_HEIGHT
+    const dirtImage = this.textures.get('dirt').getSourceImage() as HTMLImageElement
+    const dirtTileScale = dirtHeight / dirtImage.height
+    const dirtY = GROUND_TOP_Y + GRASS_STRIP_HEIGHT + dirtHeight / 2
+    const dirtSprite = this.add.tileSprite(GAME_WIDTH / 2, dirtY, GAME_WIDTH * 2, dirtHeight, 'dirt')
+    dirtSprite.setTileScale(dirtTileScale, dirtTileScale)
+
     const ground = this.physics.add.staticGroup()
-    ground.add(grass)
-    ground.add(erde)
-    ;(grass.body as Phaser.Physics.Arcade.StaticBody).setSize(GAME_WIDTH * 2, 12)
-    ;(erde.body as Phaser.Physics.Arcade.StaticBody).setSize(GAME_WIDTH * 2, GROUND_HEIGHT - 12)
+    ground.add(grassSprite)
+    ground.add(dirtSprite)
+    ;(grassSprite.body as Phaser.Physics.Arcade.StaticBody).setSize(GAME_WIDTH * 2, GRASS_STRIP_HEIGHT)
+    ;(dirtSprite.body as Phaser.Physics.Arcade.StaticBody).setSize(GAME_WIDTH * 2, dirtHeight)
 
     this.player = new Player(this, PLAYER_X, GROUND_TOP_Y)
     this.physics.add.collider(this.player.rect, ground)
@@ -81,6 +113,14 @@ export class GameScene extends Phaser.Scene {
     const level = LEVELS[this.levelIndex]
     const banner: LevelBanner = {index: this.levelIndex, name: level.name, difficulty: level.difficulty, restarted}
     this.game.events.emit(EVT_LEVEL, banner)
+  }
+
+  /** Rein dekorative Pflanze, ohne Kollision — sitzt oben auf dem Grasstreifen. */
+  private spawnPlant(): void {
+    const scale = PLANT_HEIGHT / (this.textures.get('plant').getSourceImage() as HTMLImageElement).height
+    const plant = this.add.image(SPAWN_X, GROUND_TOP_Y, 'plant').setOrigin(0.5, 1).setScale(scale)
+    plant.setDepth(-1) // hinter dem Spieler
+    this.plants.push(plant)
   }
 
   private spawnEvent(event: LevelEvent): void {
@@ -133,6 +173,8 @@ export class GameScene extends Phaser.Scene {
     for (const portal of this.portals) portal.destroy()
     this.portals = []
     this.activePortal = null
+    for (const plant of this.plants) plant.destroy()
+    this.plants = []
 
     this.levelElapsed = 0
     this.eventPointer = 0
@@ -174,6 +216,8 @@ export class GameScene extends Phaser.Scene {
     for (const portal of this.portals) portal.destroy()
     this.portals = []
     this.activePortal = null
+    for (const plant of this.plants) plant.destroy()
+    this.plants = []
 
     this.levelIndex = (this.levelIndex + 1) % LEVELS.length
     this.levelElapsed = 0
@@ -193,6 +237,13 @@ export class GameScene extends Phaser.Scene {
     }
     for (const obstacle of this.obstacles) obstacle.body.setVelocityX(-this.worldSpeed)
     for (const portal of this.portals) portal.body.setVelocityX(-this.worldSpeed)
+    for (const plant of this.plants) plant.x -= this.worldSpeed * dt
+
+    this.plantTimer -= dt
+    if (this.plantTimer <= 0) {
+      this.spawnPlant()
+      this.plantTimer = Phaser.Math.FloatBetween(PLANT_GAP_MIN, PLANT_GAP_MAX)
+    }
 
     const level = LEVELS[this.levelIndex]
     this.levelElapsed += dt
@@ -215,6 +266,14 @@ export class GameScene extends Phaser.Scene {
     this.portals = this.portals.filter((portal) => {
       if (portal.isOffscreen) {
         portal.destroy()
+        return false
+      }
+      return true
+    })
+
+    this.plants = this.plants.filter((plant) => {
+      if (plant.x < -PLANT_HEIGHT) {
+        plant.destroy()
         return false
       }
       return true
