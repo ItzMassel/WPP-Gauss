@@ -4,6 +4,7 @@ import {
   HECHT_GLIDE_ALTITUDE,
   HECHT_GLIDE_DURATION,
   HECHT_HEIGHT,
+  HECHT_ROTATE_DURATION,
   JUMP_SPEED,
   PLAYER_HEIGHT,
   PLAYER_WIDTH,
@@ -27,10 +28,12 @@ export class Player {
   private readonly scene: Phaser.Scene
   private readonly groundTopY: number
   private readonly sprite: Phaser.GameObjects.Sprite
+  private readonly onHecht?: () => void
 
-  constructor(scene: Phaser.Scene, x: number, groundTopY: number) {
+  constructor(scene: Phaser.Scene, x: number, groundTopY: number, onHecht?: () => void) {
     this.scene = scene
     this.groundTopY = groundTopY
+    this.onHecht = onHecht
 
     this.rect = scene.add.rectangle(x, groundTopY - PLAYER_HEIGHT / 2, PLAYER_WIDTH, PLAYER_HEIGHT, 0x000000, 0)
     scene.physics.add.existing(this.rect)
@@ -80,15 +83,15 @@ export class Player {
     this.body.setSize(PLAYER_HEIGHT * 0.7, HECHT_HEIGHT)
     this.rect.y = this.groundTopY - HECHT_GLIDE_ALTITUDE - HECHT_HEIGHT / 2
     this.rect.setAngle(0)
+    this.onHecht?.()
 
-    // Dreht sich beim Hechten um volle 90°, bis er (nach dem Gleitflug) am Boden aufkommt.
-    const fallTime = Math.sqrt((2 * HECHT_GLIDE_ALTITUDE) / GRAVITY_Y)
-    const totalDuration = HECHT_GLIDE_DURATION + fallTime
+    // Dreht sich sofort um 90° (Pivot: die Füße, siehe sprite-Origin) und bleibt dann flach,
+    // bis das Aufstehen beim Landen in update() den Winkel zurücksetzt.
     this.scene.tweens.add({
       targets: this.rect,
       angle: 90,
-      duration: totalDuration * 1000,
-      ease: 'Linear',
+      duration: HECHT_ROTATE_DURATION * 1000,
+      ease: 'Quad.easeOut',
     })
 
     this.scene.time.delayedCall(HECHT_GLIDE_DURATION * 1000, () => {

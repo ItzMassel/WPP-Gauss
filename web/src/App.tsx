@@ -86,6 +86,16 @@ export default function App() {
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
           <button
+            onClick={() => navigate('/quiz')}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              fontSize: '0.7rem', letterSpacing: '0.12em', textTransform: 'uppercase',
+              ...S.accent, opacity: 0.85,
+            }}
+          >
+            Quizzes
+          </button>
+          <button
             onClick={() => navigate('/spiel')}
             style={{
               background: 'none', border: 'none', cursor: 'pointer', padding: 0,

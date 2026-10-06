@@ -4,7 +4,7 @@ import {Portal} from '../entities/Portal'
 import {Obstacle} from '../entities/Obstacle'
 import {randomQuestion, type MathQuestion} from '../data/questions'
 import {LEVELS, LEVEL_DURATION, type LevelEvent} from '../data/levels'
-import {KNOCKBACK_DISTANCE, MAX_HP, SCROLL_SPEED, SPEED_ACCEL} from '../data/physics'
+import {HECHT_BOOST_DECAY, HECHT_SPEED_BOOST, KNOCKBACK_DISTANCE, MAX_HP, SCROLL_SPEED, SPEED_ACCEL} from '../data/physics'
 
 export const GAME_WIDTH = 800
 export const GAME_HEIGHT = 400
@@ -91,7 +91,7 @@ export class GameScene extends Phaser.Scene {
     ;(grassSprite.body as Phaser.Physics.Arcade.StaticBody).setSize(GAME_WIDTH * 2, GRASS_STRIP_HEIGHT)
     ;(dirtSprite.body as Phaser.Physics.Arcade.StaticBody).setSize(GAME_WIDTH * 2, dirtHeight)
 
-    this.player = new Player(this, PLAYER_X, GROUND_TOP_Y)
+    this.player = new Player(this, PLAYER_X, GROUND_TOP_Y, () => this.onPlayerHecht())
     this.physics.add.collider(this.player.rect, ground)
 
     this.input.keyboard?.on('keydown-SPACE', () => this.onJumpInput())
@@ -107,6 +107,11 @@ export class GameScene extends Phaser.Scene {
   private onJumpInput(): void {
     if (this.paused) return
     this.player.jump()
+  }
+
+  /** Kurzer Tempo-Kick beim Hecht-Absprung, klingt danach wieder sauber auf Normaltempo ab. */
+  private onPlayerHecht(): void {
+    this.worldSpeed = SCROLL_SPEED + HECHT_SPEED_BOOST
   }
 
   private announceLevel(restarted: boolean): void {
@@ -234,6 +239,8 @@ export class GameScene extends Phaser.Scene {
     const dt = deltaMs / 1000
     if (this.worldSpeed < SCROLL_SPEED) {
       this.worldSpeed = Math.min(SCROLL_SPEED, this.worldSpeed + SPEED_ACCEL * dt)
+    } else if (this.worldSpeed > SCROLL_SPEED) {
+      this.worldSpeed = Math.max(SCROLL_SPEED, this.worldSpeed - HECHT_BOOST_DECAY * dt)
     }
     for (const obstacle of this.obstacles) obstacle.body.setVelocityX(-this.worldSpeed)
     for (const portal of this.portals) portal.body.setVelocityX(-this.worldSpeed)

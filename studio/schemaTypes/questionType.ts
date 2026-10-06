@@ -48,6 +48,15 @@ export const eventType = defineType({
       ],
       hidden: ({document}) => document?.type !== 'multiplechoice',
     }),
+    defineField({
+      name: 'multiple',
+      title: 'Multiple Answers',
+      type: 'boolean',
+      options: {
+        layout: "checkbox"
+      },
+      hidden: ({document}) => document?.type !== 'multiplechoice',
+    }),
 
     // Sort: items in the correct order
     defineField({

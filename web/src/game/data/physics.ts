@@ -37,6 +37,15 @@ export const KNOCKBACK_DISTANCE = 3 * BLOCK_SIZE
 export const SPEED_RAMP_TIME = 1.2
 export const SPEED_ACCEL = SCROLL_SPEED / SPEED_RAMP_TIME
 
+/** Kurzer Tempo-Kick beim Hecht-Absprung, klingt danach wieder auf Normaltempo ab. */
+export const HECHT_SPEED_BOOST = 70
+/** Zeit, bis der Hecht-Boost wieder auf Normaltempo abgeklungen ist. */
+const HECHT_BOOST_DECAY_TIME = 0.35
+export const HECHT_BOOST_DECAY = HECHT_SPEED_BOOST / HECHT_BOOST_DECAY_TIME
+
+/** Dauer der schnellen Dreh-Animation zu Beginn des Hechtens (dreht sofort, statt über die ganze Flugzeit). */
+export const HECHT_ROTATE_DURATION = 0.15
+
 /** Sicherheitsabstand, der beim Bemessen der Hindernis-"Deckenhöhen" einkalkuliert wird. */
 const CLEARANCE_MARGIN = 16
 const HECHT_CLEARANCE_MARGIN = 9
