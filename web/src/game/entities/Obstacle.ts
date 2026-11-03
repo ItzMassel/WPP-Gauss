@@ -1,5 +1,12 @@
 import Phaser from 'phaser'
-import {LOWBEAM_CLEARANCE, OBSTACLE_WIDTH, OVERHEAD_CLEARANCE, SCROLL_SPEED, type ObstacleKind} from '../data/physics'
+import {
+  GROUND_OBSTACLE_HEIGHT,
+  LOWBEAM_CLEARANCE,
+  OBSTACLE_WIDTH,
+  OVERHEAD_CLEARANCE,
+  SCROLL_SPEED,
+  type ObstacleKind,
+} from '../data/physics'
 
 export type ObstacleType = ObstacleKind
 
@@ -14,7 +21,7 @@ interface ObstacleSpec {
 // Platzhalter-Farben je Hindernistyp, bis echte Sprites geliefert werden.
 const SPEC: Record<ObstacleType, ObstacleSpec> = {
   // Bodenhindernis: muss übersprungen werden.
-  ground: {width: OBSTACLE_WIDTH.ground, height: 36, color: 0x6b4a2f, clearance: 0},
+  ground: {width: OBSTACLE_WIDTH.ground, height: GROUND_OBSTACLE_HEIGHT, color: 0x6b4a2f, clearance: 0},
   // Hochhindernis: passt man im normalen Lauf locker drunter durch — beim Springen stößt man an.
   overhead: {width: OBSTACLE_WIDTH.overhead, height: 260, color: 0x3b4a5c, clearance: OVERHEAD_CLEARANCE},
   // Niedriges Hindernis: dafür muss man in der Luft hechten (Doppelsprung), um flach darunter durchzukommen.

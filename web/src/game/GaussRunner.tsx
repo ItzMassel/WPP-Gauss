@@ -147,40 +147,64 @@ export default function GaussRunner() {
             position: 'absolute',
             inset: 0,
             top: '2.5rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'rgba(13,17,23,0.82)',
+            background: 'rgba(13,17,23,0.6)',
           }}
         >
+          <img
+            src="/gauss-npc.png"
+            alt="Gauß"
+            style={{
+              position: 'absolute',
+              left: '1rem',
+              bottom: 0,
+              height: 230,
+              imageRendering: 'pixelated',
+            }}
+          />
           <div
             style={{
+              position: 'absolute',
+              left: 200,
+              bottom: 150,
+              width: 380,
               background: 'var(--color-surface)',
               border: `1px solid ${wrong ? '#c0392b' : 'var(--color-border)'}`,
               borderTop: '2px solid var(--color-accent)',
               borderRadius: '2px',
-              padding: '2rem 2.5rem',
+              padding: '1.25rem 1.5rem',
               textAlign: 'center',
-              minWidth: '280px',
             }}
           >
+            <div
+              style={{
+                position: 'absolute',
+                left: -9,
+                bottom: 26,
+                width: 16,
+                height: 16,
+                transform: 'rotate(45deg)',
+                background: 'var(--color-surface)',
+                borderLeft: `1px solid ${wrong ? '#c0392b' : 'var(--color-border)'}`,
+                borderBottom: `1px solid ${wrong ? '#c0392b' : 'var(--color-border)'}`,
+              }}
+            />
             <div
               style={{
                 fontSize: '0.62rem',
                 letterSpacing: '0.22em',
                 textTransform: 'uppercase',
                 color: 'var(--color-accent)',
-                marginBottom: '0.9rem',
+                marginBottom: '0.6rem',
               }}
             >
-              Portal — Löse die Aufgabe
+              Gauß fragt — Löse die Aufgabe
             </div>
             <div
               style={{
                 fontFamily: "'Playfair Display', Georgia, serif",
-                fontSize: '1.6rem',
+                fontSize: '1.5rem',
                 fontWeight: 700,
-                marginBottom: '1.25rem',
+                marginBottom: '1rem',
                 color: 'var(--color-text)',
               }}
             >
@@ -195,7 +219,7 @@ export default function GaussRunner() {
               style={{
                 width: '100%',
                 padding: '0.6rem 0.8rem',
-                marginBottom: '1rem',
+                marginBottom: '0.75rem',
                 background: 'var(--color-background)',
                 border: '1px solid var(--color-border)',
                 borderRadius: '2px',

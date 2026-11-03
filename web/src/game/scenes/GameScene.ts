@@ -51,6 +51,8 @@ export class GameScene extends Phaser.Scene {
   private hp = MAX_HP
   /** Aktuelle Welt-/Laufgeschwindigkeit; sinkt bei einer Kollision auf 0 und beschleunigt wieder hoch. */
   private worldSpeed = SCROLL_SPEED
+  /** Zusatztempo des Hechts: gilt im Gleitflug voll, klingt danach ab. Eine Kollision bricht es ab. */
+  private hechtBoost = 0
 
   constructor() {
     super('GameScene')
@@ -60,7 +62,7 @@ export class GameScene extends Phaser.Scene {
     this.load.image('grass', 'grass.jpg')
     this.load.image('dirt', 'dirt.jpg')
     this.load.image('plant', 'plant.png')
-    this.load.image('portal', 'portal.jpg')
+    this.load.image('gauss-npc', 'gauss-npc.png')
     for (let i = 1; i <= 5; i++) this.load.image(`player-${i}`, `player/${i}.png`)
   }
 
@@ -91,10 +93,20 @@ export class GameScene extends Phaser.Scene {
     ;(grassSprite.body as Phaser.Physics.Arcade.StaticBody).setSize(GAME_WIDTH * 2, GRASS_STRIP_HEIGHT)
     ;(dirtSprite.body as Phaser.Physics.Arcade.StaticBody).setSize(GAME_WIDTH * 2, dirtHeight)
 
-    this.player = new Player(this, PLAYER_X, GROUND_TOP_Y, () => this.onPlayerHecht())
+    this.player = new Player(this, PLAYER_X, GROUND_TOP_Y, () =>
+      this.obstacles
+        .filter((obstacle) => obstacle.type === 'ground')
+        .map((obstacle) => ({
+          left: obstacle.rect.x - obstacle.rect.width / 2,
+          right: obstacle.rect.x + obstacle.rect.width / 2,
+        })),
+    )
     this.physics.add.collider(this.player.rect, ground)
 
-    this.input.keyboard?.on('keydown-SPACE', () => this.onJumpInput())
+    // Gehaltene Leertaste sendet Wiederholungs-Events — die würden sonst sofort den Hecht auslösen.
+    this.input.keyboard?.on('keydown-SPACE', (event: KeyboardEvent) => {
+      if (!event.repeat) this.onJumpInput()
+    })
     this.input.on('pointerdown', () => this.onJumpInput())
 
     this.game.events.on(EVT_ANSWER, this.onAnswer, this)
@@ -107,11 +119,6 @@ export class GameScene extends Phaser.Scene {
   private onJumpInput(): void {
     if (this.paused) return
     this.player.jump()
-  }
-
-  /** Kurzer Tempo-Kick beim Hecht-Absprung, klingt danach wieder sauber auf Normaltempo ab. */
-  private onPlayerHecht(): void {
-    this.worldSpeed = SCROLL_SPEED + HECHT_SPEED_BOOST
   }
 
   private announceLevel(restarted: boolean): void {
@@ -162,6 +169,7 @@ export class GameScene extends Phaser.Scene {
     for (const portal of this.portals) portal.rect.x += KNOCKBACK_DISTANCE
     this.levelElapsed = Math.max(0, this.levelElapsed - KNOCKBACK_DISTANCE / SCROLL_SPEED)
     this.worldSpeed = 0
+    this.hechtBoost = 0
   }
 
   private die(): void {
@@ -184,6 +192,7 @@ export class GameScene extends Phaser.Scene {
     this.levelElapsed = 0
     this.eventPointer = 0
     this.worldSpeed = SCROLL_SPEED
+    this.hechtBoost = 0
 
     this.hp = MAX_HP
     this.game.events.emit(EVT_HP, this.hp)
@@ -234,17 +243,23 @@ export class GameScene extends Phaser.Scene {
 
   update(_time: number, deltaMs: number): void {
     if (this.paused) return
-    this.player.update()
 
     const dt = deltaMs / 1000
+    this.player.update(dt)
+
     if (this.worldSpeed < SCROLL_SPEED) {
       this.worldSpeed = Math.min(SCROLL_SPEED, this.worldSpeed + SPEED_ACCEL * dt)
-    } else if (this.worldSpeed > SCROLL_SPEED) {
-      this.worldSpeed = Math.max(SCROLL_SPEED, this.worldSpeed - HECHT_BOOST_DECAY * dt)
     }
-    for (const obstacle of this.obstacles) obstacle.body.setVelocityX(-this.worldSpeed)
-    for (const portal of this.portals) portal.body.setVelocityX(-this.worldSpeed)
-    for (const plant of this.plants) plant.x -= this.worldSpeed * dt
+    // Hecht: die Welt rast schneller an Gauß vorbei, solange er flach durch die Luft fliegt.
+    if (this.player.isGliding) {
+      this.hechtBoost = HECHT_SPEED_BOOST
+    } else {
+      this.hechtBoost = Math.max(0, this.hechtBoost - HECHT_BOOST_DECAY * dt)
+    }
+    const speed = this.worldSpeed + this.hechtBoost
+    for (const obstacle of this.obstacles) obstacle.body.setVelocityX(-speed)
+    for (const portal of this.portals) portal.body.setVelocityX(-speed)
+    for (const plant of this.plants) plant.x -= speed * dt
 
     this.plantTimer -= dt
     if (this.plantTimer <= 0) {
@@ -253,7 +268,9 @@ export class GameScene extends Phaser.Scene {
     }
 
     const level = LEVELS[this.levelIndex]
-    this.levelElapsed += dt
+    // Die Karte läuft um den Boost schneller durch, damit der Abstand zwischen Hindernissen
+    // (in px) gleich bleibt und neue Hindernisse nicht zu dicht auf bereits sichtbare folgen.
+    this.levelElapsed += dt * (1 + this.hechtBoost / SCROLL_SPEED)
 
     while (this.eventPointer < level.events.length) {
       const event = level.events[this.eventPointer]

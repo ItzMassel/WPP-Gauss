@@ -10,9 +10,9 @@ export class Portal {
   solved = false
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    const portalImage = scene.textures.get('portal').getSourceImage() as HTMLImageElement
+    const portalImage = scene.textures.get('gauss-npc').getSourceImage() as HTMLImageElement
     const aspect = portalImage.width / portalImage.height
-    this.rect = scene.add.image(x, y, 'portal')
+    this.rect = scene.add.image(x, y, 'gauss-npc')
     this.rect.setDisplaySize(HEIGHT * aspect, HEIGHT)
     scene.physics.add.existing(this.rect)
     this.body = this.rect.body as Phaser.Physics.Arcade.Body
@@ -20,15 +20,6 @@ export class Portal {
     this.body.setVelocityX(-SCROLL_SPEED)
     this.body.setSize(WIDTH, HEIGHT)
 
-    scene.tweens.add({
-      targets: this.rect,
-      scaleX: 1.08,
-      scaleY: 1.08,
-      duration: 650,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
-    })
   }
 
   get isOffscreen(): boolean {
