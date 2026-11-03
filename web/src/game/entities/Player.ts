@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 import {
   GRAVITY_Y,
   HECHT_GLIDE_ALTITUDE,
+  HECHT_COOLDOWN,
   HECHT_GLIDE_DURATION,
   HECHT_HEIGHT,
   HECHT_HOP_ALTITUDE,
@@ -73,6 +74,8 @@ export class Player {
   /** Aktuelle Gleithöhe der Hitbox-Unterkante über dem Boden; steigt kurz über Bodenhindernisse. */
   private altitude = HECHT_GLIDE_ALTITUDE
   private speedLineTimer = 0
+  /** Restliche Ladezeit der Ausdauer in Sekunden; erst bei 0 ist der Hecht wieder möglich. */
+  private cooldown = 0
 
   /** `getGroundHazards` liefert die Bodenhindernisse (Spikes), über die Gauß hechten darf. */
   constructor(scene: Phaser.Scene, x: number, groundTopY: number, getGroundHazards: () => HazardSpan[]) {
@@ -108,6 +111,11 @@ export class Player {
     this.syncSprite()
   }
 
+  /** Ausdauer von 0 (leer) bis 1 (voll, Hecht bereit). */
+  get stamina(): number {
+    return 1 - this.cooldown / HECHT_COOLDOWN
+  }
+
   /** True, solange Gauß flach durch die Luft rast — die Welt scrollt dann schneller. */
   get isGliding(): boolean {
     return this.state === 'hecht' && this.hechtPhase === 'glide'
@@ -119,7 +127,7 @@ export class Player {
 
   /**
    * Erster Druck am Boden = Sprung. Jeder Druck in der Luft (egal ob steigend oder fallend)
-   * löst den Hecht aus — auch direkt im selben Frame nach dem Absprung.
+   * löst den Hecht aus — auch direkt im selben Frame nach dem Absprung —, sofern die Ausdauer voll ist.
    */
   jump(): void {
     if (this.state === 'hecht') {
@@ -131,7 +139,7 @@ export class Player {
       return
     }
     if (this.state === 'jump' || !this.isGrounded) {
-      this.hecht()
+      if (this.cooldown <= 0) this.hecht()
     } else {
       this.startJump()
     }
@@ -158,6 +166,7 @@ export class Player {
     this.state = 'hecht'
     this.hechtPhase = 'glide'
     this.hechtTime = 0
+    this.cooldown = HECHT_COOLDOWN
     this.body.setAllowGravity(false)
     this.body.setVelocityY(0)
     this.setHitbox(HECHT_LENGTH, HECHT_HEIGHT)
@@ -196,6 +205,7 @@ export class Player {
     this.pitch = 0
     this.visualLagY = 0
     this.altitude = HECHT_GLIDE_ALTITUDE
+    this.cooldown = 0
     this.hitboxHeight = PLAYER_HEIGHT
     this.body.setSize(PLAYER_WIDTH, PLAYER_HEIGHT)
     this.rect.setPosition(x, this.groundTopY - PLAYER_HEIGHT / 2)
@@ -312,6 +322,7 @@ export class Player {
 
   update(deltaSeconds: number): void {
     const dt = Math.min(deltaSeconds, MAX_DT)
+    this.cooldown = Math.max(0, this.cooldown - dt)
 
     if (this.state === 'hecht') {
       this.updateHecht(dt)

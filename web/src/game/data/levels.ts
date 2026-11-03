@@ -10,6 +10,8 @@
 import {
   crossingTime,
   earliestRequirement,
+  HECHT_COOLDOWN,
+  HECHT_SKIP_TIME,
   OBSTACLE_WIDTH,
   PORTAL_WIDTH,
   REACTION_TIME,
@@ -22,6 +24,10 @@ import {
 export const LEVEL_DURATION = 180 // Sekunden = genau 3 Minuten pro Level (4 * 260px/s * 180s Weltstrecke)
 const SAFETY_END_MARGIN = 6 // letzte Sekunden jedes Levels bleiben hindernisfrei ("Auslauf" vor dem Checkpoint)
 const START_DELAY = 3 // ruhige Anlaufzeit zu Levelbeginn
+// Ein Lowbeam ist nur per Hecht passierbar, und der Hecht braucht HECHT_COOLDOWN Sekunden Ausdauer-
+// Ladezeit. Der Hecht spult die Welt außerdem um HECHT_SKIP_TIME vor, daher kommt das nächste
+// Hindernis entsprechend früher an. Plus Puffer, damit die Leiste nicht auf die Millisekunde voll sein muss.
+const MIN_LOWBEAM_GAP = HECHT_COOLDOWN + HECHT_SKIP_TIME + 0.3
 
 export type SpawnKind = ObstacleKind | 'portal'
 
@@ -138,14 +144,24 @@ function generateLevel(index: number): LevelDef {
 
   let candidateT0 = START_DELAY
   let prev: LevelEvent | null = null
+  let lastLowbeamT0: number | null = null
 
   while (candidateT0 < LEVEL_DURATION - SAFETY_END_MARGIN) {
-    const kind = pickKind(rng, tuning.weights)
-    const width = widthFor(kind)
-    const timing = timingForKind(kind, width)
+    let kind = pickKind(rng, tuning.weights)
+    let width = widthFor(kind)
+    let timing = timingForKind(kind, width)
 
     let t0 = candidateT0
     if (prev) t0 = Math.max(t0, minNextT0(prev, timing, width))
+
+    // Zu dicht auf den letzten Lowbeam: die Ausdauer wäre noch nicht geladen, also stattdessen ein Spike.
+    if (kind === 'lowbeam' && lastLowbeamT0 !== null && t0 - lastLowbeamT0 < MIN_LOWBEAM_GAP) {
+      kind = 'ground'
+      width = widthFor(kind)
+      timing = timingForKind(kind, width)
+      t0 = candidateT0
+      if (prev) t0 = Math.max(t0, minNextT0(prev, timing, width))
+    }
     if (t0 >= LEVEL_DURATION - SAFETY_END_MARGIN) break
 
     const requiredMin = prev ? minNextT0(prev, timing, width) : t0
@@ -154,6 +170,7 @@ function generateLevel(index: number): LevelDef {
     const event: LevelEvent = {kind, t0, width, timing, slack}
     events.push(event)
     prev = event
+    if (kind === 'lowbeam') lastLowbeamT0 = t0
 
     const gap = tuning.baseGap + (rng() * 2 - 1) * tuning.gapJitter
     candidateT0 = t0 + Math.max(gap, 0.6)

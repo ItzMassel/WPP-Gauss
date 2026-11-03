@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 import {Player} from '../entities/Player'
 import {Portal} from '../entities/Portal'
 import {Obstacle} from '../entities/Obstacle'
+import colors from '../../theme/colors'
 import {randomQuestion, type MathQuestion} from '../data/questions'
 import {LEVELS, LEVEL_DURATION, type LevelEvent} from '../data/levels'
 import {HECHT_BOOST_DECAY, HECHT_SPEED_BOOST, KNOCKBACK_DISTANCE, MAX_HP, SCROLL_SPEED, SPEED_ACCEL} from '../data/physics'
@@ -21,6 +22,14 @@ const PLANT_GAP_MIN = 2.5
 const PLANT_GAP_MAX = 5.5
 /** Sekunden, die ein Hindernis vom Spawn am rechten Rand bis zum Spieler braucht. */
 const SPAWN_LEAD = (SPAWN_X - PLAYER_X) / SCROLL_SPEED
+
+/** Position/Größe der Ausdauer-Leiste (Hecht-Ladezeit) oben links im Spielfeld. */
+const STAMINA_X = 16
+const STAMINA_Y = 28
+const STAMINA_WIDTH = 140
+const STAMINA_HEIGHT = 10
+
+const themeColor = (hex: string): number => Phaser.Display.Color.HexStringToColor(hex).color
 
 export const EVT_QUESTION = 'gauss-runner:question'
 export const EVT_ANSWER = 'gauss-runner:answer'
@@ -53,6 +62,10 @@ export class GameScene extends Phaser.Scene {
   private worldSpeed = SCROLL_SPEED
   /** Zusatztempo des Hechts: gilt im Gleitflug voll, klingt danach ab. Eine Kollision bricht es ab. */
   private hechtBoost = 0
+
+  private staminaBar!: Phaser.GameObjects.Graphics
+  private staminaLabel!: Phaser.GameObjects.Text
+  private staminaReady = true
 
   constructor() {
     super('GameScene')
@@ -103,6 +116,12 @@ export class GameScene extends Phaser.Scene {
     )
     this.physics.add.collider(this.player.rect, ground)
 
+    this.staminaBar = this.add.graphics().setDepth(100)
+    this.staminaLabel = this.add
+      .text(STAMINA_X, STAMINA_Y - 14, 'HECHT · BEREIT', {fontFamily: 'Georgia, serif', fontSize: '10px', color: colors.accent})
+      .setDepth(100)
+    this.drawStamina()
+
     // Gehaltene Leertaste sendet Wiederholungs-Events — die würden sonst sofort den Hecht auslösen.
     this.input.keyboard?.on('keydown-SPACE', (event: KeyboardEvent) => {
       if (!event.repeat) this.onJumpInput()
@@ -119,6 +138,27 @@ export class GameScene extends Phaser.Scene {
   private onJumpInput(): void {
     if (this.paused) return
     this.player.jump()
+  }
+
+  /** Zeichnet die Ausdauer-Leiste: füllt sich über HECHT_COOLDOWN, leuchtet golden, sobald der Hecht bereit ist. */
+  private drawStamina(): void {
+    const value = this.player.stamina
+    const ready = value >= 1
+    const bar = this.staminaBar
+
+    bar.clear()
+    bar.fillStyle(themeColor(colors.background), 0.75)
+    bar.fillRect(STAMINA_X, STAMINA_Y, STAMINA_WIDTH, STAMINA_HEIGHT)
+    bar.fillStyle(themeColor(ready ? colors.accent : colors.textMuted), 1)
+    bar.fillRect(STAMINA_X + 1, STAMINA_Y + 1, (STAMINA_WIDTH - 2) * value, STAMINA_HEIGHT - 2)
+    bar.lineStyle(1, themeColor(ready ? colors.accent : colors.border), 1)
+    bar.strokeRect(STAMINA_X + 0.5, STAMINA_Y + 0.5, STAMINA_WIDTH - 1, STAMINA_HEIGHT - 1)
+
+    if (ready !== this.staminaReady) {
+      this.staminaReady = ready
+      this.staminaLabel.setText(ready ? 'HECHT · BEREIT' : 'HECHT · LÄDT')
+      this.staminaLabel.setColor(ready ? colors.accent : colors.textMuted)
+    }
   }
 
   private announceLevel(restarted: boolean): void {
@@ -246,6 +286,7 @@ export class GameScene extends Phaser.Scene {
 
     const dt = deltaMs / 1000
     this.player.update(dt)
+    this.drawStamina()
 
     if (this.worldSpeed < SCROLL_SPEED) {
       this.worldSpeed = Math.min(SCROLL_SPEED, this.worldSpeed + SPEED_ACCEL * dt)

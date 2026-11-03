@@ -43,6 +43,9 @@ export const HECHT_BOOST_DECAY = HECHT_SPEED_BOOST / HECHT_BOOST_DECAY_TIME
  */
 export const HECHT_SKIP_TIME = (HECHT_SPEED_BOOST * (HECHT_GLIDE_DURATION + HECHT_BOOST_DECAY_TIME / 2)) / SCROLL_SPEED
 
+/** Wartezeit nach einem Hecht, bis die Ausdauer wieder voll ist und erneut gehechtet werden darf, in Sekunden. */
+export const HECHT_COOLDOWN = 5
+
 /** Höhe des Bodenhindernisses ("Spike"), in px. */
 export const GROUND_OBSTACLE_HEIGHT = 36
 /** Gleithöhe, wenn Gauß über ein Bodenhindernis hechtet — knapp über dessen Oberkante. */
