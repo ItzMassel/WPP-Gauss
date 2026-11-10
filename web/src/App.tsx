@@ -96,6 +96,16 @@ export default function App() {
             Quizzes
           </button>
           <button
+            onClick={() => navigate('/lektion')}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              fontSize: '0.7rem', letterSpacing: '0.12em', textTransform: 'uppercase',
+              ...S.accent, opacity: 0.85,
+            }}
+          >
+            Lektion
+          </button>
+          <button
             onClick={() => navigate('/spiel')}
             style={{
               background: 'none', border: 'none', cursor: 'pointer', padding: 0,

@@ -23,6 +23,11 @@ const PLANT_GAP_MAX = 5.5
 /** Sekunden, die ein Hindernis vom Spawn am rechten Rand bis zum Spieler braucht. */
 const SPAWN_LEAD = (SPAWN_X - PLAYER_X) / SCROLL_SPEED
 
+/** Reihenfolge der Hintergrundbilder (background/N.jpg) im endlos wiederholten Streifen; 3 = ohne Häuser. */
+const BACKGROUND_ORDER = [1, 3, 2, 3]
+/** Hintergrund scrollt langsamer als die Welt (Parallax-Effekt). */
+const BACKGROUND_PARALLAX = 0.25
+
 /** Position/Größe der Ausdauer-Leiste (Hecht-Ladezeit) oben links im Spielfeld. */
 const STAMINA_X = 16
 const STAMINA_Y = 28
@@ -54,6 +59,8 @@ export class GameScene extends Phaser.Scene {
   private levelElapsed = 0
   private eventPointer = 0
 
+  private background!: Phaser.GameObjects.TileSprite
+
   private plants: Phaser.GameObjects.Image[] = []
   private plantTimer = Phaser.Math.Between(PLANT_GAP_MIN * 1000, PLANT_GAP_MAX * 1000) / 1000
 
@@ -72,15 +79,18 @@ export class GameScene extends Phaser.Scene {
   }
 
   preload(): void {
+    for (const n of new Set(BACKGROUND_ORDER)) this.load.image(`background-${n}`, `background/${n}.jpg`)
     this.load.image('grass', 'grass.jpg')
     this.load.image('dirt', 'dirt.jpg')
     this.load.image('plant', 'plant.png')
+    this.load.image('spike', 'spike.png')
     this.load.image('gauss-npc', 'gauss-npc.png')
     for (let i = 1; i <= 5; i++) this.load.image(`player-${i}`, `player/${i}.png`)
   }
 
   create(): void {
     this.cameras.main.setBackgroundColor(LEVELS[0].background)
+    this.createBackground()
 
     // Boden: dünner Grasstreifen oben (nur der grüne Teil der grass.jpg-Textur),
     // darunter die gekachelte dirt.jpg-Textur bis zum unteren Rand.
@@ -133,6 +143,31 @@ export class GameScene extends Phaser.Scene {
 
     this.announceLevel(false)
     this.game.events.emit(EVT_HP, this.hp)
+  }
+
+  /**
+   * Fügt die Hintergrundbilder (leicht unterschiedlich breit) auf Spielfeldhöhe skaliert zu einem
+   * Streifen zusammen, der als TileSprite endlos wiederholt wird.
+   */
+  private createBackground(): void {
+    const images = BACKGROUND_ORDER.map((n) => this.textures.get(`background-${n}`).getSourceImage() as HTMLImageElement)
+    const widths = images.map((image) => Math.round((image.width * GAME_HEIGHT) / image.height))
+    const stripWidth = widths.reduce((a, b) => a + b, 0)
+
+    if (this.textures.exists('background-strip')) this.textures.remove('background-strip')
+    const strip = this.textures.createCanvas('background-strip', stripWidth, GAME_HEIGHT)
+    if (!strip) return
+    const ctx = strip.getContext()
+    ctx.imageSmoothingEnabled = false
+    let x = 0
+    images.forEach((image, i) => {
+      ctx.drawImage(image, x, 0, widths[i], GAME_HEIGHT)
+      x += widths[i]
+    })
+    strip.refresh()
+
+    this.background = this.add.tileSprite(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 'background-strip')
+    this.background.setDepth(-10) // hinter Pflanzen und Boden
   }
 
   private onJumpInput(): void {
@@ -301,6 +336,7 @@ export class GameScene extends Phaser.Scene {
     for (const obstacle of this.obstacles) obstacle.body.setVelocityX(-speed)
     for (const portal of this.portals) portal.body.setVelocityX(-speed)
     for (const plant of this.plants) plant.x -= speed * dt
+    this.background.tilePositionX += speed * dt * BACKGROUND_PARALLAX
 
     this.plantTimer -= dt
     if (this.plantTimer <= 0) {

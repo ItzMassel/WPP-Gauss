@@ -41,6 +41,7 @@ export default function GaussRunner() {
       scene: [GameScene],
     })
     gameRef.current = game
+    ;(window as any).__game = game // TEMP-DEBUG
 
     game.events.on(EVT_QUESTION, (q: MathQuestion) => {
       setQuestion(q)
