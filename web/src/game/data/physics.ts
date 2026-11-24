@@ -2,9 +2,9 @@
 // (levels.ts) rechnen alle mit denselben Werten, damit die generierte Karte zur
 // tatsächlichen Spielphysik passt.
 
-export const GRAVITY_Y = 1400
+export const GRAVITY_Y = 2400
 /** Sprunggeschwindigkeit nach oben, als positiver Betrag. */
-export const JUMP_SPEED = 520
+export const JUMP_SPEED = 620
 /** Weltgeschwindigkeit: Hindernisse/Portale scrollen mit dieser Geschwindigkeit nach links. */
 export const SCROLL_SPEED = 260
 
