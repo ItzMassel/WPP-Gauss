@@ -1,4 +1,5 @@
 import {useNavigate} from 'react-router-dom'
+import {useAuth} from './auth/AuthContext'
 
 const S = {
   display: { fontFamily: "'Playfair Display', Georgia, serif" } as const,
@@ -66,6 +67,7 @@ const points = [
 
 export default function App() {
   const navigate = useNavigate()
+  const { user, totalPoints } = useAuth()
   return (
     <div style={{ minHeight: '100vh', overflowX: 'hidden', background: 'var(--color-background)' }}>
 
@@ -115,8 +117,8 @@ export default function App() {
           >
             Spiel (Beta)
           </button>
-          <button className="btn-outline" style={{ padding: '0.4rem 1rem', fontSize: '0.7rem' }}>
-            Anmelden
+          <button className="btn-outline" style={{ padding: '0.4rem 1rem', fontSize: '0.7rem' }} onClick={() => navigate('/anmelden')}>
+            {user ? `${user.username} · ${totalPoints} Punkte` : 'Anmelden'}
           </button>
         </div>
       </nav>

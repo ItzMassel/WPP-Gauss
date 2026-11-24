@@ -1,4 +1,5 @@
 import {defineField, defineType} from 'sanity'
+import {FillTemplateInput} from '../components/FillTemplateInput'
 
 export const question = defineType({
   name: 'question',
@@ -7,8 +8,9 @@ export const question = defineType({
   fields: [
     defineField({
       name: 'question',
-      title: 'Frage',
+      title: 'Frage / Aufgabe / Titel',
       type: 'string',
+      description: 'Bei Lückentext und Zuordnung die Aufgabenstellung, bei Info-Karten die Überschrift.',
       validation: (Rule) => Rule.required(),
     }),
     defineField({
@@ -22,6 +24,9 @@ export const question = defineType({
           {title: 'Schätzfrage', value: 'guess'},
           {title: 'Sortierung', value: 'sort'},
           {title: 'Freitext', value: 'text'},
+          {title: 'Lückentext (nur Lektion)', value: 'fill'},
+          {title: 'Zuordnung (nur Lektion)', value: 'match'},
+          {title: 'Info-Karte (nur Lektion)', value: 'info'},
         ],
         layout: 'radio',
       },
@@ -88,6 +93,84 @@ export const question = defineType({
       of: [{type: 'string'}],
       hidden: ({document}) => document?.type !== 'sort',
     }),
+    defineField({
+      name: 'fillTemplate',
+      title: 'Lückentext',
+      type: 'string',
+      description: 'Ganzen Satz eintippen, dann unten die Wörter anklicken, die Lücken sein sollen. (Intern: {0}, {1} … = Lücken.)',
+      components: {input: FillTemplateInput},
+      hidden: ({document}) => document?.type !== 'fill',
+    }),
+    defineField({
+      name: 'fillAnswers',
+      title: 'Richtige Wörter (Reihenfolge = Lücke 0, 1 …)',
+      type: 'array',
+      of: [{type: 'string'}],
+      hidden: ({document}) => document?.type !== 'fill',
+    }),
+    defineField({
+      name: 'fillDistractors',
+      title: 'Ablenker (falsche Wörter in der Wortbank)',
+      type: 'array',
+      of: [{type: 'string'}],
+      hidden: ({document}) => document?.type !== 'fill',
+    }),
+    defineField({
+      name: 'matchPairs',
+      title: 'Paare (links ↔ rechts)',
+      type: 'array',
+      of: [
+        {
+          type: 'object',
+          fields: [
+            defineField({name: 'left', title: 'Links', type: 'string', validation: (Rule) => Rule.required()}),
+            defineField({name: 'right', title: 'Rechts', type: 'string', validation: (Rule) => Rule.required()}),
+          ],
+          preview: {
+            select: {title: 'left', subtitle: 'right'},
+          },
+        },
+      ],
+      hidden: ({document}) => document?.type !== 'match',
+    }),
+    defineField({
+      name: 'infoEmblem',
+      title: 'Emblem (kurz, z. B. „1777–1855“ oder „17“)',
+      type: 'string',
+      hidden: ({document}) => document?.type !== 'info',
+    }),
+    defineField({
+      name: 'infoText',
+      title: 'Text',
+      type: 'text',
+      rows: 4,
+      hidden: ({document}) => document?.type !== 'info',
+    }),
+    defineField({
+      name: 'infoFacts',
+      title: 'Fakten',
+      type: 'array',
+      of: [
+        {
+          type: 'object',
+          fields: [
+            defineField({name: 'label', title: 'Bezeichnung', type: 'string', validation: (Rule) => Rule.required()}),
+            defineField({name: 'value', title: 'Wert', type: 'string', validation: (Rule) => Rule.required()}),
+          ],
+          preview: {
+            select: {title: 'label', subtitle: 'value'},
+          },
+        },
+      ],
+      hidden: ({document}) => document?.type !== 'info',
+    }),
+    defineField({
+      name: 'explanation',
+      title: 'Erklärung (optional, wird in der Lektion nach der Antwort gezeigt)',
+      type: 'text',
+      rows: 2,
+      hidden: ({document}) => document?.type === 'info',
+    }),
   ],
   preview: {
     select: {title: 'question', subtitle: 'type'},
@@ -98,6 +181,9 @@ export const question = defineType({
         guess: 'Schätzfrage',
         sort: 'Sortierung',
         text: 'Freitext',
+        fill: 'Lückentext',
+        match: 'Zuordnung',
+        info: 'Info-Karte',
       }
       return {title, subtitle: typeMap[subtitle] ?? subtitle}
     },

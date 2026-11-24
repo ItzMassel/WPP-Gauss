@@ -1,6 +1,7 @@
 import {useEffect, useMemo, useRef, useState} from 'react'
 import {useNavigate, useParams} from 'react-router-dom'
 import {client} from '../sanityClient'
+import {useAuth} from '../auth/AuthContext'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -35,6 +36,8 @@ type Answer =
   | {type: 'guess'; value: number; correct: boolean}
   | {type: 'sort'; order: string[]; correct: boolean}
   | {type: 'text'; value: string; correct: true}
+
+const QUIZ_TYPES: SanityQuestion['type'][] = ['text', 'multiplechoice', 'sort', 'guess', 'yesno']
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -121,6 +124,7 @@ function shuffle<T>(arr: T[]): T[] {
 export default function LecturePage() {
   const {lectureId} = useParams<{lectureId: string}>()
   const navigate = useNavigate()
+  const {user, awardPoints} = useAuth()
   const [lecture, setLecture] = useState<LectureWithQuestions | null>(null)
   const [loading, setLoading] = useState(true)
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -148,6 +152,8 @@ export default function LecturePage() {
         {id: lectureId},
       )
       .then((data) => {
+        // Lückentext, Zuordnung und Info-Karten gibt es nur in der Lektion (/lektion).
+        if (data) data.questions = (data.questions ?? []).filter((q) => q && QUIZ_TYPES.includes(q.type))
         setLecture(data)
         setLoading(false)
       })
@@ -195,6 +201,11 @@ export default function LecturePage() {
   )
   const correctCount = scored.filter((a) => a.correct).length
   const points = calcPoints(answers, questions)
+
+  // Punkte einmalig pro Vorlesung speichern, sobald das Quiz beendet ist (Server zahlt nur einmal aus).
+  useEffect(() => {
+    if (done && lectureId && points > 0) void awardPoints('quiz', lectureId, points)
+  }, [done]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div style={{minHeight: '100vh', background: 'var(--color-background)', overflowX: 'hidden'}}>
@@ -308,6 +319,17 @@ export default function LecturePage() {
           />
         )}
 
+        {!loading && lecture && done && !user && (
+          <p style={{textAlign: 'center', color: 'var(--color-textMuted)', fontSize: '0.9rem', marginBottom: '1.5rem'}}>
+            <button
+              onClick={() => navigate('/anmelden')}
+              style={{background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--color-accent)'}}
+            >
+              Melde dich an
+            </button>
+            , um deine Gauß-Punkte zu speichern.
+          </p>
+        )}
         {!loading && lecture && done && (
           <ResultsView
             lecture={lecture}

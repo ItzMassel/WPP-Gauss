@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gauß – Alle Fragen</title>
+<style>
+  :root {
+    --background: #0d1117;
+    --surface: #161b22;
+    --surface-hover: #1c232c;
+    --accent: #c9a84c;
+    --text: #e6edf3;
+    --text-muted: #9aa4af;
+    --text-faint: #6b7580;
+    --border: #2a313a;
+    --ok: #5fb878;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.5;
+  }
+  main { max-width: 900px; margin: 0 auto; padding: 3rem 1rem 6rem; }
+  h1 {
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: clamp(2rem, 5vw, 3rem);
+    margin: 0 0 .25rem;
+  }
+  h1 em { color: var(--accent); }
+  .sub { color: var(--text-muted); margin: 0 0 2rem; }
+
+  .toolbar {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; flex-wrap: wrap; gap: .75rem; align-items: center;
+    background: rgba(13, 17, 23, .92); backdrop-filter: blur(8px);
+    padding: .75rem 0; border-bottom: 1px solid var(--border); margin-bottom: 1.25rem;
+  }
+  .toolbar .count { color: var(--text-muted); font-size: .9rem; margin-left: auto; }
+  .toolbar .count strong { color: var(--accent); }
+  button, select, input[type="search"] {
+    background: var(--surface); color: var(--text);
+    border: 1px solid var(--border); border-radius: 3px;
+    padding: .45rem .8rem; font: inherit; font-size: .85rem;
+  }
+  button { cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  input[type="search"] { min-width: 12rem; flex: 1 1 12rem; }
+
+  .group h2 {
+    font-size: .7rem; letter-spacing: .22em; text-transform: uppercase;
+    color: var(--accent); margin: 2rem 0 .75rem;
+    display: flex; align-items: center; gap: .6rem;
+  }
+  .group h2 label { cursor: pointer; display: flex; align-items: center; gap: .6rem; }
+
+  .q {
+    display: flex; gap: .9rem; align-items: flex-start;
+    background: var(--surface); border: 1px solid var(--border);
+    border-left: 2px solid var(--border);
+    border-radius: 3px; padding: .9rem 1rem; margin-bottom: .6rem;
+    cursor: pointer; transition: background .15s, border-color .15s;
+  }
+  .q:hover { background: var(--surface-hover); }
+  .q.checked { border-left-color: var(--accent); }
+  input[type="checkbox"] {
+    width: 1.15rem; height: 1.15rem; margin-top: .2rem;
+    accent-color: var(--accent); flex-shrink: 0; cursor: pointer;
+  }
+  .body { flex: 1; min-width: 0; }
+  .title { font-weight: 500; }
+  .meta { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .35rem; }
+  .tag {
+    font-size: .68rem; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--text-faint); border: 1px solid var(--border);
+    border-radius: 2px; padding: .05rem .4rem;
+  }
+  .answer { margin: .6rem 0 0; padding: 0; list-style: none; font-size: .88rem; color: var(--text-muted); }
+  .answer li { padding: .1rem 0; }
+  .answer li.correct { color: var(--ok); }
+  .answer li.correct::before { content: "✓ "; }
+  .answer li:not(.correct)::before { content: "· "; color: var(--text-faint); }
+  .answer.ordered { list-style: decimal inside; }
+  .answer.ordered li::before { content: none; }
+  .status { color: var(--text-muted); padding: 3rem 0; text-align: center; }
+  .status.error { color: #e5736d; }
+  mark { background: rgba(201, 168, 76, .3); color: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Alle <em>Fragen</em></h1>
+  <p class="sub" id="source">Live aus Sanity geladen (Projekt <code>59zxvwfo</code>, Dataset <code>production</code>).</p>
+
+  <div class="toolbar">
+    <input type="search" id="search" placeholder="Fragen durchsuchen …">
+    <select id="typeFilter" aria-label="Fragetyp"></select>
+    <button id="selectAll" type="button">Alle auswählen</button>
+    <button id="selectNone" type="button">Keine</button>
+    <button id="copy" type="button">Auswahl kopieren</button>
+    <span class="count"><strong id="selCount">0</strong> von <span id="totalCount">0</span> ausgewählt</span>
+  </div>
+
+  <div id="list"><div class="status">Lade Fragen …</div></div>
+</main>
+
+<script id="snapshot" type="application/json">{"lectures":[{"ids":["17c825f7-cdb6-4788-bfa1-591f10a5406d","390c580f-973e-441a-878d-df5c07241df4","ba4bffc8-6fb2-4141-a57e-9fa19d6cf986","40a45c9e-650d-4a85-8acc-cb079dc7e7d7","09a16b2c-440d-4179-aaa1-3a27b8073c4a"],"title":"Grundwissen Gauß"},{"ids":["cdfedb0f-5e6e-4c44-8a40-274d4ec37c18","65945c0c-5c16-4305-958e-3f19f9096178","7d671b48-822e-4af1-9569-7c1d7ddcaaba","8f102c18-2078-4798-ac08-c5b35c8a9d58","37f62b78-5ac2-4eff-86d8-3fd2db9961ba","e7e8de78-3cf1-45d8-b5fd-ef82a9ee5374","67c4e15e-1ccb-4870-89b6-12b39de1a6b2"],"title":"Fragen-Lektion 3."},{"ids":["5b2ffb99-9f6e-4b65-83b2-3735525cd83b","e28433e7-1800-4851-b772-bf4c14eec15e","c6a3a08a-87cf-4c2b-9053-6f331027f727","fd62bf24-e8bf-430b-9fa7-eb7b7db2e626","ba84b6b9-f222-4fb2-9582-c04337524737","6a2ba877-5e55-41d5-af23-98ceed0c69e8","4b9e3966-185e-4008-a933-c9ca7da4edd6"],"title":"Erfindungen & Tricks"}],"questions":[{"_id":"09a16b2c-440d-4179-aaa1-3a27b8073c4a","correctAnswer":null,"correctNumber":null,"multipleCorrect":null,"options":[{"_key":"d3f0311dfe0e","label":"König der Physik"},{"_key":"22ff0b57a95a","label":"Vater der Geometrie"},{"_key":"aead9a20addf","correct":true,"label":"Fürst der Mathematiker"},{"_key":"35a3331d4660","label":"Meister der Astronomie"}],"question":"Welcher Ehrentitel wird Gauß aufgrund seiner überragenden Leistung oft zugeschrieben ?","rangeMax":null,"rangeMin":null,"sortItems":null,"type":"multiplechoice"},{"_id":"17c825f7-cdb6-4788-bfa1-591f10a5406d","correctAnswer":null,"correctNumber":null,"multipleCorrect":null,"options":[{"_key":"d8c3f3751f87","correct":false,"label":"Göttingen"},{"_key":"90f030c6eadc","correct":true,"label":"Braunschweig"},{"_key":"5e3be493e537","label":"Hannover"},{"_key":"b45037e1c35c","label":"Berlin"}],"question":"In welcher deutschen Stadt wurde Carl Friedrich Gauß 1777 geboren?","rangeMax":null,"rangeMin":null,"sortItems":null,"type":"multiplechoice"},{"_id":"40a45c9e-650d-4a85-8acc-cb079dc7e7d7","correctAnswer":null,"correctNumber":77,"multipleCorrect":null,"options":null,"question":"In welchem Alter (vollendete Lebensjahre) verstarb Carl Friedrich Gauß in Göttingen?","rangeMax":79,"rangeMin":73,"sortItems":null,"type":"guess"},{"_id":"d71f8be2-19e3-42c4-aad7-cabfdbd21d47","correctAnswer":null,"correctNumber":146,"multipleCorrect":null,"options":null,"question":"Wie viele kurze, mathematische Einträge enthält das berühmte, erst posthum entdeckte \"Geheime Tagebuch\" von Gauß?","rangeMax":null,"rangeMin":null,"sortItems":null,"type":"guess"},{"_id":"ba4bffc8-6fb2-4141-a57e-9fa19d6cf986","correctAnswer":null,"correctNumber":null,"multipleCorrect":null,"options":[{"_key":"721c5ea009c9","label":"Albert Einstein"},{"_key":"95d862b24ca0","correct":true,"label":"Wilhelm Weber (Physikier)"},{"_key":"0edb7d0d0926","correct":true,"label":"Alexander von Humboldt (Naturforscher)"},{"_key":"20738fb44c6d","label":"Isaac Newton"}],"question":"Welche der folgenden Wissenschaftler arbeiteten zu Lebzeiten eng mit Gauß zusammen oder standen in intensivem, direktem Austausch mit ihm? (Mehrere Antwortmöglichkeiten möglich!)","rangeMax":null,"rangeMin":null,"sortItems":null,"type":"multiplechoice"},{"_id":"390c580f-973e-441a-878d-df5c07241df4","correctAnswer":null,"correctNumber":null,"multipleCorrect":null,"options":null,"question":"Sortiere die Lebensstationen von Gauß in der richtigen chronologischen Reihenfolge (von Vergangenheit zu Gegenwart)","rangeMax":null,"rangeMin":null,"sortItems":["Beginn des Mathematikstudiums an der Universität Göttingen","Einreichung der Doktorarbeit an der Universität Helmstedt","Ernennung zum Direktor der Göttinger Sternwarte","Übernahme der Leitung der hannoverschen Landesvermessung"],"type":"sort"},{"_id":"3c606919-151b-461f-b84c-883d770366d6","correctAnswer":null,"correctNumber":null,"multipleCorrect":null,"options":[{"_key":"c2dc8b3ede84","label":"Tesla "},{"_key":"451c1ea83fb7","label":"Volt"},{"_key":"739eb2fe259d","label":"Ampere"},{"_key":"3439c167827e","correct":true,"label":"Gauß"}],"question":"In welcher physikalischen Maßeinheit wurde (CGS-system) die magnetische Flussdichte nach Gauß benannt?","rangeMax":null,"rangeMin":null,"sortItems":null,"type":"multiplechoice"},{"_id":"5b2ffb99-9f6e-4b65-83b2-3735525cd83b","correctAnswer":null,"correctNumber":null,"multipleCorrect":null,"options":[{"_key":"964100dee291","label":"Den ersten funktionierenden Elektromotor"},{"_key":"daa311bc2b26","label":"Eine frühe Glühbirne"},{"_key":"5a3fa93301a2","correct":true,"label":"Den ersten elektromagnetischen Telegrafen"},{"_key":"c4a811da6ad0","label":"Das moderne Mikroskop "}],"question":"Was erfand Gauß 1833 gemeinsam mit dem Physiker Wilhelm Weber in Göttingen?","rangeMax":null,"rangeMin":null,"sortItems":null,"type":"multiplechoice"},{"_id":"e28433e7-1800-4851-b772-bf4c14eec15e","correctAnswer":null,"correctNumber":null,"multipleCorrect":null,"options":[{"_key":"58ddfb95b3af","label":"Sextant "},{"_key":"cf698b6c673d","label":"Heliotrup"},{"_key":"984cb5e32c7e","correct":true,"label":"Heliotron"},{"_key":"b619e8b24d25","label":"Theodolit"}],"question":"Welches Messinstrument erfand Gauß für die hannoversche Landesvermessung, um Sonnenlicht über weite Strecken zu spiegeln?","rangeMax":null,"rangeMin":null,"sortItems":null,"type":"multiplechoice"},{"_id":"c6a3a08a-87cf-4c2b-9053-6f331027f727","correctAnswer":null,"correctNumber":null,"multipleCorrect":null,"options":[{"_key":"0592e20b3134","correct":true,"label":"Regelmäßiges 17-Eck"},{"_key":"2ebb85d2907b","label":"Regelmäßiges 13-Eck"},{"_key":"c83a332d369a","label":"Gleichschenkliges Trapez"},{"_key":"004f239c4930","label":"Perfektes Oval"}],"question":"Welches geometrische Gebilde wies Gauß als 19-Jähriger nach, das man allein mit Zirkel und Lineal konstruieren kann?","rangeMax":null,"rangeMin":null,"sortItems":null,"type":"multiplechoice"},{"_id":"fd62bf24-e8bf-430b-9fa7-eb7b7db2e626","correctAnswer":null,"correctNumber":null,"multipleCorrect":null,"options":[{"_key":"5c3b39ac04a0","label":"4050"},{"_key":"ef449f1129c9","label":"5000"},{"_key":"7c7e35f71633","correct":true,"label":"5050"},{"_key":"01528c87614d","label":"10000"}],"question":"Wie lautet das Ergebnis der berühmten Summenformel des \"kleinen Gauß\" für die Zahlen von 1 bis 100?","rangeMax":null,"rangeMin":null,"sortItems":null,"type":"multiplechoice"},{"_id":"ba84b6b9-f222-4fb2-9582-c04337524737","correctAnswer":null,"correctNumber":null,"multipleCorrect":null,"options":[{"_key":"d7842586dbf8","correct":true,"label":"Gaußsche Normal verteilung"},{"_key":"15a82527e2c8","label":"Nichts"},{"_key":"eb0508b33ae0","label":"Gaußsche Einheiten berechnung"}],"question":"Welche Erfindung wird jeden Tag verwendet ?","rangeMax":null,"rangeMin":null,"sortItems":null,"type":"multiplechoice"},{"_id":"6a2ba877-5e55-41d5-af23-98ceed0c69e8","correctAnswer":null,"correctNumber":null,"multipleCorrect":null,"options":[{"_key":"9893b5d28801","label":"z= 1,5"},{"_key":"089887e2a67c","correct":true,"label":"z=2,0"},{"_key":"f5607f1892ec","label":"z= 2,5"},{"_key":"5e4d96c54a76","label":"z= 3,0"}],"question":"Eine Zufallsgröße X ist normalverteilt mit \\mu = 100 und \\sigma = 15. Welchem z-Wert entspricht ein Messwert von x = 130?","rangeMax":null,"rangeMin":null,"sortItems":null,"type":"multiplechoice"},{"_id":"4b9e3966-185e-4008-a933-c9ca7da4edd6","correctAnswer":null,"correctNumber":null,"multipleCorrect":null,"options":[{"_key":"ad33d7004f6e","correct":true,"label":"Die Kurve ist achsensymmetrisch zur y-Achse (x = 0)"},{"_key":"47bdb3274a16","correct":true,"label":"Erwartungswert, Median und Modus (häufigster Wert) fallen alle auf 0 zusammen"},{"_key":"ea7d48666eac","correct":true,"label":"Die Wendepunkte der Dichtefunktion liegen genau bei x = 1 und x = -1"},{"_key":"8872898709a3","label":"Die Glockenkurve berührt an den Rändern die x-Achse und wird dort gleich 0"}],"question":"Welche der folgenden Aussagen über die Standardnormalverteilung (y=0,0=1) sind korrekt?","rangeMax":null,"rangeMin":null,"sortItems":null,"type":"multiplechoice"},{"_id":"cdfedb0f-5e6e-4c44-8a40-274d4ec37c18","correctAnswer":null,"correctNumber":1275,"multipleCorrect":null,"options":null,"question":"Berechne mithilfe des Prinzips von Gauß die Summe aller natürlichen Zahlen von 1 bis 50 ?","rangeMax":1275,"rangeMin":1275,"sortItems":null,"type":"guess"},{"_id":"65945c0c-5c16-4305-958e-3f19f9096178","correctAnswer":null,"correctNumber":2550,"multipleCorrect":null,"options":null,"question":"Was ergibt die Summe aller geraden Zahlen von 2 bis 100 ?","rangeMax":2550,"rangeMin":2550,"sortItems":null,"type":"guess"},{"_id":"7d671b48-822e-4af1-9569-7c1d7ddcaaba","correctAnswer":null,"correctNumber":500500,"multipleCorrect":null,"options":null,"question":"Was ist die Summe aller natürlichen Zahlen von 1 bis 1000 ?","rangeMax":500500,"rangeMin":500500,"sortItems":null,"type":"guess"},{"_id":"8f102c18-2078-4798-ac08-c5b35c8a9d58","correctAnswer":null,"correctNumber":3775,"multipleCorrect":null,"options":null,"question":"Wie lautet die Summe aller natürlichen Zahlen von 51 bis 100 ?","rangeMax":3775,"rangeMin":3775,"sortItems":null,"type":"guess"},{"_id":"37f62b78-5ac2-4eff-86d8-3fd2db9961ba","correctAnswer":null,"correctNumber":1085,"multipleCorrect":null,"options":null,"question":"Wie lautet die Summe aller natürlichen Zahlen von 51 bis 100 ?","rangeMax":1085,"rangeMin":1085,"sortItems":null,"type":"guess"},{"_id":"e7e8de78-3cf1-45d8-b5fd-ef82a9ee5374","correctAnswer":null,"correctNumber":10000,"multipleCorrect":null,"options":null,"question":"Was ergibt die Summe aller ungeraden Zahlen von 1 bis 199 ?","rangeMax":10000,"rangeMin":10000,"sortItems":null,"type":"guess"},{"_id":"67c4e15e-1ccb-4870-89b6-12b39de1a6b2","correctAnswer":null,"correctNumber":50500,"multipleCorrect":null,"options":null,"question":"Addiere alle Zehnerzahlen von 10 bis 1000 ?","rangeMax":50500,"rangeMin":50500,"sortItems":null,"type":"guess"}]}</script>
+<script>
+const PROJECT = '59zxvwfo', DATASET = 'production', API_VERSION = '2025-01-01';
+const STORAGE_KEY = 'gauss-fragen-selected';
+
+const TYPE_LABELS = {
+  multiplechoice: 'Multiple Choice',
+  yesno: 'Ja / Nein',
+  guess: 'Schätzfrage',
+  sort: 'Sortierung',
+  text: 'Freitext',
+};
+const NO_LECTURE = 'Keiner Vorlesung zugewiesen';
+
+const QUERY = `{
+  "questions": *[_type == "question"] | order(_createdAt asc) {
+    _id, question, type, multipleCorrect, options, correctAnswer,
+    correctNumber, rangeMin, rangeMax, sortItems
+  },
+  "lectures": *[_type == "lecture"] | order(order asc) {
+    title, "ids": questions[]._ref
+  }
+}`;
+
+let questions = [];
+let selected = new Set();
+
+try { selected = new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')); } catch {}
+const persist = () => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify([...selected])); } catch {} };
+
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, text) => {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+};
+
+function answerLines(q) {
+  switch (q.type) {
+    case 'multiplechoice':
+      return { items: (q.options || []).map((o) => ({ text: o.label, correct: !!o.correct })) };
+    case 'yesno':
+      return { items: [{ text: q.correctAnswer ? 'Ja' : 'Nein', correct: true }] };
+    case 'guess': {
+      const range = q.rangeMin != null || q.rangeMax != null ? ` (Bereich: ${q.rangeMin ?? '–'} bis ${q.rangeMax ?? '–'})` : '';
+      return { items: [{ text: `${q.correctNumber ?? '–'}${range}`, correct: true }] };
+    }
+    case 'sort':
+      return { items: (q.sortItems || []).map((s) => ({ text: s })), ordered: true };
+    default:
+      return { items: [] };
+  }
+}
+
+function render() {
+  const term = $('search').value.trim().toLowerCase();
+  const type = $('typeFilter').value;
+  const list = $('list');
+  list.replaceChildren();
+
+  const visible = questions.filter((q) =>
+    (!type || q.type === type) && (!term || (q.question || '').toLowerCase().includes(term)));
+
+  if (!visible.length) {
+    list.append(el('div', 'status', 'Keine Fragen gefunden.'));
+    updateCount();
+    return;
+  }
+
+  const groups = new Map();
+  for (const q of visible) {
+    const key = q.lectureTitle;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(q);
+  }
+  const ordered = [...groups.keys()].sort((a, b) => (a === NO_LECTURE) - (b === NO_LECTURE));
+
+  for (const title of ordered) {
+    const qs = groups.get(title);
+    const group = el('section', 'group');
+    const h = el('h2');
+    const groupBox = document.createElement('input');
+    groupBox.type = 'checkbox';
+    groupBox.checked = qs.every((q) => selected.has(q._id));
+    groupBox.title = 'Alle Fragen dieser Gruppe';
+    groupBox.addEventListener('change', () => {
+      qs.forEach((q) => groupBox.checked ? selected.add(q._id) : selected.delete(q._id));
+      persist(); render();
+    });
+    const lbl = el('label');
+    lbl.append(groupBox, document.createTextNode(`${title} · ${qs.length}`));
+    h.append(lbl);
+    group.append(h);
+
+    for (const q of qs) {
+      const row = el('label', 'q' + (selected.has(q._id) ? ' checked' : ''));
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.checked = selected.has(q._id);
+      box.addEventListener('change', () => {
+        box.checked ? selected.add(q._id) : selected.delete(q._id);
+        row.classList.toggle('checked', box.checked);
+        persist(); updateCount();
+      });
+
+      const body = el('div', 'body');
+      body.append(el('div', 'title', q.question));
+      const meta = el('div', 'meta');
+      meta.append(el('span', 'tag', TYPE_LABELS[q.type] || q.type));
+      if (q.type === 'multiplechoice') meta.append(el('span', 'tag', q.multipleCorrect ? 'Mehrfachauswahl' : 'Einzelauswahl'));
+      body.append(meta);
+
+      const { items, ordered: isOrdered } = answerLines(q);
+      if (items.length) {
+        const ul = el('ul', 'answer' + (isOrdered ? ' ordered' : ''));
+        items.forEach((it) => ul.append(el('li', it.correct ? 'correct' : '', it.text)));
+        body.append(ul);
+      }
+      row.append(box, body);
+      group.append(row);
+    }
+    list.append(group);
+  }
+  updateCount();
+}
+
+function updateCount() {
+  $('selCount').textContent = questions.filter((q) => selected.has(q._id)).length;
+  $('totalCount').textContent = questions.length;
+}
+
+function visibleIds() {
+  const term = $('search').value.trim().toLowerCase();
+  const type = $('typeFilter').value;
+  return questions
+    .filter((q) => (!type || q.type === type) && (!term || (q.question || '').toLowerCase().includes(term)))
+    .map((q) => q._id);
+}
+
+$('search').addEventListener('input', render);
+$('typeFilter').addEventListener('change', render);
+$('selectAll').addEventListener('click', () => { visibleIds().forEach((id) => selected.add(id)); persist(); render(); });
+$('selectNone').addEventListener('click', () => { visibleIds().forEach((id) => selected.delete(id)); persist(); render(); });
+$('copy').addEventListener('click', async (e) => {
+  const text = questions.filter((q) => selected.has(q._id)).map((q) => `- ${q.question}`).join('\n');
+  const btn = e.currentTarget, old = btn.textContent;
+  try { await navigator.clipboard.writeText(text); btn.textContent = 'Kopiert ✓'; }
+  catch { btn.textContent = 'Kopieren nicht möglich'; }
+  setTimeout(() => (btn.textContent = old), 1500);
+});
+
+async function load() {
+  const url = `https://${PROJECT}.apicdn.sanity.io/v${API_VERSION}/data/query/${DATASET}?query=${encodeURIComponent(QUERY)}`;
+  try {
+    let result;
+    try {
+      // Fails with "Failed to fetch" when opened as file:// (Sanity sends no CORS header for it)
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      result = (await res.json()).result;
+    } catch (liveErr) {
+      const snap = $('snapshot');
+      if (!snap) throw liveErr;
+      result = JSON.parse(snap.textContent);
+      $('source').textContent = 'Offline-Stand (eingebetteter Snapshot) – neu erzeugen für aktuelle Daten.';
+    }
+
+    const lectureOf = new Map();
+    for (const l of result.lectures) for (const id of l.ids || []) if (!lectureOf.has(id)) lectureOf.set(id, l.title);
+    questions = result.questions.map((q) => ({ ...q, lectureTitle: lectureOf.get(q._id) || NO_LECTURE }));
+
+    // drop stale selections for questions that no longer exist
+    const known = new Set(questions.map((q) => q._id));
+    selected = new Set([...selected].filter((id) => known.has(id)));
+
+    const sel = $('typeFilter');
+    sel.append(new Option('Alle Typen', ''));
+    for (const t of [...new Set(questions.map((q) => q.type))]) sel.append(new Option(TYPE_LABELS[t] || t, t));
+
+    render();
+  } catch (err) {
+    $('list').replaceChildren(el('div', 'status error', `Fragen konnten nicht geladen werden (${err.message}).`));
+  }
+}
+load();
+</script>
+</body>
+</html>

@@ -65,7 +65,7 @@ export const PORTAL_WIDTH = 50
 
 /** Leben, Rückstoß und Wiederbeschleunigung nach einer Hindernis-Kollision. */
 export const MAX_HP = 3
-const BLOCK_SIZE = 32
+export const BLOCK_SIZE = 32
 /** Rückstoß nach einer Kollision, "drei Blöcke". */
 export const KNOCKBACK_DISTANCE = 3 * BLOCK_SIZE
 /** Zeit, bis die Weltgeschwindigkeit nach einem Rückstoß wieder ihr Maximum erreicht. */

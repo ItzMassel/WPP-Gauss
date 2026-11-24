@@ -1,3 +1,6 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://gauss.212.227.210.13.sslip.io/api/:path*" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }

@@ -16,6 +16,7 @@ import {
   PLAYER_HEIGHT,
   PLAYER_WIDTH,
 } from '../data/physics'
+import type {Terrain} from './Terrain'
 
 export type PlayerState = 'run' | 'jump' | 'hecht'
 /** Waagerechter Bereich eines Hindernisses, in Welt-Koordinaten. */
@@ -48,6 +49,11 @@ const SPEED_LINE_INTERVAL = 0.07
 const HOP_GRACE_TIME = 0.25
 /** Größter erlaubter Zeitschritt, damit ein Tab-Wechsel keinen Hecht-Ablauf überspringt. */
 const MAX_DT = 0.05
+/**
+ * Kleine Stufen werden verziehen: ragt eine Blockoberkante beim Landen höchstens so weit (in px)
+ * über die Füße, setzt sich Gauß obendrauf, statt gegen die Wand zu prallen.
+ */
+const STEP_FORGIVENESS = 8
 
 export class Player {
   /** Unsichtbare Hitbox, treibt die komplette Physik — von der Grafik komplett entkoppelt. */
@@ -60,6 +66,16 @@ export class Player {
   private readonly sprite: Phaser.GameObjects.Sprite
   private readonly uprightWidth: number
   private readonly getGroundHazards: () => HazardSpan[]
+  private readonly terrain: Terrain
+  private readonly onTerrainHit: () => void
+
+  /** True, wenn Gauß auf einem Geländeblock steht (der Basisboden läuft über den Arcade-Collider). */
+  private onBlock = false
+  /** Unterkante/Oberkante der Hitbox am Ende des letzten Frames — zeigt, ob ein Block von oben, unten oder seitlich kam. */
+  private prevFeetY = 0
+  private prevHeadY = 0
+  /** Oberfläche, auf der der aktuelle Hecht gestartet ist; der Gleitflug hält die Höhe darüber. */
+  private glideFloorY: number
 
   /** Aktuelle Hitbox-Höhe; die Füße (Unterkante) bleiben beim Umschalten der Hitbox fest. */
   private hitboxHeight = PLAYER_HEIGHT
@@ -77,13 +93,26 @@ export class Player {
   /** Restliche Ladezeit der Ausdauer in Sekunden; erst bei 0 ist der Hecht wieder möglich. */
   private cooldown = 0
 
-  /** `getGroundHazards` liefert die Bodenhindernisse (Spikes), über die Gauß hechten darf. */
-  constructor(scene: Phaser.Scene, x: number, groundTopY: number, getGroundHazards: () => HazardSpan[]) {
+  /**
+   * `getGroundHazards` liefert die Bodenhindernisse (Spikes), über die Gauß hechten darf.
+   * `onTerrainHit` wird gerufen, wenn Gauß seitlich gegen einen Geländeblock läuft.
+   */
+  constructor(
+    scene: Phaser.Scene,
+    x: number,
+    groundTopY: number,
+    getGroundHazards: () => HazardSpan[],
+    terrain: Terrain,
+    onTerrainHit: () => void,
+  ) {
     this.scene = scene
     this.groundTopY = groundTopY
     this.getGroundHazards = getGroundHazards
+    this.terrain = terrain
+    this.onTerrainHit = onTerrainHit
+    this.glideFloorY = groundTopY
 
-    this.rect = scene.add.rectangle(x, groundTopY - PLAYER_HEIGHT / 2, PLAYER_WIDTH, PLAYER_HEIGHT, 0x000000, 0)
+    this.rect = scene.add.rectangle(x, this.standingY(x) - PLAYER_HEIGHT / 2, PLAYER_WIDTH, PLAYER_HEIGHT, 0x000000, 0)
     scene.physics.add.existing(this.rect)
     this.body = this.rect.body as Phaser.Physics.Arcade.Body
     this.body.setGravityY(GRAVITY_Y)
@@ -109,6 +138,61 @@ export class Player {
     // Läuft dauerhaft weiter, unabhängig von Sprung/Hecht — die Animation stoppt nie.
     this.sprite.play(RUN_ANIM_KEY)
     this.syncSprite()
+    this.rememberExtent()
+
+    // Erst nach dem Physik-Schritt (Arcade schreibt die Bewegung in POST_UPDATE auf rect), sonst
+    // würde das Setzen von rect.y von der Body-Bewegung dieses Frames überlagert.
+    scene.events.on(Phaser.Scenes.Events.POST_UPDATE, this.collideTerrain, this)
+    scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => scene.events.off(Phaser.Scenes.Events.POST_UPDATE, this.collideTerrain, this))
+  }
+
+  /** Y der Füße, wenn Gauß bei Bildschirm-x `x` auf dem Boden/Hügel (nicht auf schwebenden Plattformen) steht. */
+  private standingY(x: number): number {
+    return this.terrain.groundY(x - PLAYER_WIDTH / 2, x + PLAYER_WIDTH / 2)
+  }
+
+  /** Merkt sich Ober-/Unterkante der Hitbox als Referenz für die Kollision im nächsten Frame. */
+  private rememberExtent(): void {
+    this.prevFeetY = this.rect.y + this.hitboxHeight / 2
+    this.prevHeadY = this.rect.y - this.hitboxHeight / 2
+  }
+
+  /**
+   * Löst die Kollision mit Geländeblöcken. Gauß steht in x still, die Welt scrollt — von oben
+   * kommende Blöcke tragen ihn, von unten stoßen sie den Kopf an, alles andere ist eine Wand.
+   */
+  private readonly collideTerrain = (): void => {
+    if (this.scene.physics.world.isPaused) return
+
+    const half = this.body.width / 2
+    const left = this.rect.x - half
+    const right = this.rect.x + half
+    const height = this.hitboxHeight
+    const feet = this.rect.y + height / 2
+    const head = this.rect.y - height / 2
+    this.onBlock = false
+
+    if (this.body.velocity.y >= 0) {
+      // Höchste Fläche, die schon beim letzten Frame auf Fußhöhe (oder knapp darüber) lag.
+      const top = this.terrain.surfaceY(left, right, this.prevFeetY - STEP_FORGIVENESS)
+      if (top < this.groundTopY && feet >= top - 0.5) {
+        this.rect.y = top - height / 2
+        this.body.setVelocityY(0)
+        this.onBlock = true
+      }
+    } else {
+      const bottom = this.terrain.ceilingY(left, right, this.prevHeadY + STEP_FORGIVENESS)
+      if (head < bottom) {
+        this.rect.y = bottom + height / 2
+        this.body.setVelocityY(0)
+      }
+    }
+
+    const top = this.rect.y - height / 2
+    const bottom = this.rect.y + height / 2
+    if (this.terrain.overlaps(left, right, top, bottom)) this.onTerrainHit()
+
+    this.rememberExtent()
   }
 
   /** Ausdauer von 0 (leer) bis 1 (voll, Hecht bereit). */
@@ -122,7 +206,7 @@ export class Player {
   }
 
   get isGrounded(): boolean {
-    return this.body.blocked.down || this.body.touching.down
+    return this.body.blocked.down || this.body.touching.down || this.onBlock
   }
 
   /**
@@ -161,7 +245,10 @@ export class Player {
     // Liegt schon ein Bodenhindernis unter/vor Gauß, startet der Hecht direkt auf Hop-Höhe —
     // sonst würde die Hitbox erst in den Spike hineinsinken und dann aufsteigen.
     this.altitude = this.isOverGroundHazard() ? HECHT_HOP_ALTITUDE : HECHT_GLIDE_ALTITUDE
-    const glideFeetY = this.groundTopY - this.altitude
+    // Der Gleitflug hält seine Höhe über der Fläche, auf der er gestartet ist — er folgt dem Gelände nicht.
+    const half = this.body.width / 2
+    this.glideFloorY = this.terrain.surfaceY(this.rect.x - half, this.rect.x + half, oldFeetY - STEP_FORGIVENESS)
+    const glideFeetY = this.glideFloorY - this.altitude
 
     this.state = 'hecht'
     this.hechtPhase = 'glide'
@@ -172,6 +259,7 @@ export class Player {
     this.setHitbox(HECHT_LENGTH, HECHT_HEIGHT)
     this.rect.y = glideFeetY - HECHT_HEIGHT / 2
     this.visualLagY = Math.min(0, oldFeetY - glideFeetY)
+    this.rememberExtent()
 
     this.emitSpeedLines(5)
     this.speedLineTimer = SPEED_LINE_INTERVAL
@@ -195,6 +283,7 @@ export class Player {
     this.body.setSize(width, height)
     this.hitboxHeight = height
     this.rect.y = feetY - height / 2
+    this.rememberExtent()
   }
 
   reset(x: number): void {
@@ -208,11 +297,13 @@ export class Player {
     this.cooldown = 0
     this.hitboxHeight = PLAYER_HEIGHT
     this.body.setSize(PLAYER_WIDTH, PLAYER_HEIGHT)
-    this.rect.setPosition(x, this.groundTopY - PLAYER_HEIGHT / 2)
+    this.rect.setPosition(x, this.standingY(x) - PLAYER_HEIGHT / 2)
     this.body.setVelocity(0, 0)
     this.body.setAllowGravity(true)
     this.state = 'run'
+    this.onBlock = false
     this.syncSprite()
+    this.rememberExtent()
   }
 
   /** Kurze helle Streifen hinter Gauß — machen das schnell vorbeirasende Tempo sichtbar. */
@@ -258,7 +349,7 @@ export class Player {
       const target = overHazard ? HECHT_HOP_ALTITUDE : HECHT_GLIDE_ALTITUDE
       const maxStep = HECHT_HOP_SPEED * dt
       this.altitude += Phaser.Math.Clamp(target - this.altitude, -maxStep, maxStep)
-      this.rect.y = this.groundTopY - this.altitude - HECHT_HEIGHT / 2
+      this.rect.y = this.glideFloorY - this.altitude - HECHT_HEIGHT / 2
 
       this.speedLineTimer -= dt
       if (this.speedLineTimer <= 0) {

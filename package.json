@@ -2,11 +2,14 @@
   "name": "gauss",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"npm run dev:web\" \"npm run dev:studio\"",
+    "dev": "concurrently -n web,studio,api,db \"npm run dev:web\" \"npm run dev:studio\" \"npm run dev:server\" \"npm run dev:tunnel\"",
     "dev:web": "npm run dev --prefix web",
     "dev:studio": "npm run dev --prefix studio",
+    "dev:server": "npm run dev --prefix server",
+    "dev:tunnel": "ssh -N -o ExitOnForwardFailure=yes -L 5433:127.0.0.1:5432 chessperiment",
     "build:web": "npm run build --prefix web",
-    "build:studio": "npm run build --prefix studio"
+    "build:studio": "npm run build --prefix studio",
+    "build:server": "npm run build --prefix server"
   },
   "devDependencies": {
     "concurrently": "^10.0.5"

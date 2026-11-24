@@ -335,6 +335,37 @@
   line-height: 1.35;
 }
 
+/* Schätzfrage / Freitext / Hinweis */
+.ls-input {
+  display: block;
+  width: 100%;
+  background: var(--color-surface);
+  border: 2px solid var(--edge);
+  border-bottom-width: 4px;
+  border-radius: 8px;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 1.4rem;
+  padding: 0.9rem 1.1rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.ls-input:focus {
+  border-color: var(--color-accent);
+}
+.ls-input:disabled {
+  opacity: 0.7;
+}
+.ls-textarea {
+  font-size: 1.1rem;
+  resize: vertical;
+}
+.ls-hint {
+  color: var(--color-textMuted);
+  font-size: 0.95rem;
+  margin: -0.5rem 0 1rem;
+}
+
 /* ── Lückentext ────────────────────────────────────────────────────────────── */
 
 .ls-sentence {

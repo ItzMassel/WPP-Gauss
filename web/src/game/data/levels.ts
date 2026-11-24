@@ -91,7 +91,7 @@ const META: {name: string; difficulty: LevelDef['difficulty']; background: numbe
 ]
 
 // mulberry32 — winziger, deterministischer PRNG (reicht für einen festen Seed).
-function mulberry32(seed: number): () => number {
+export function mulberry32(seed: number): () => number {
   let a = seed
   return () => {
     a |= 0

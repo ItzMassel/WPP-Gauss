@@ -5,9 +5,11 @@ import {
   type Answer,
   type ChoiceStep,
   type FillStep,
+  type GuessStep,
   type InfoStep,
   type MatchStep,
   type OrderStep,
+  type TextStep,
 } from './lessonData'
 
 type ViewProps<S, A extends Answer> = {
@@ -42,36 +44,78 @@ export function InfoView({step}: {step: InfoStep}) {
 // ─── Multiple Choice ──────────────────────────────────────────────────────────
 
 export function ChoiceView({step, answer, locked, onChange}: ViewProps<ChoiceStep, Extract<Answer, {kind: 'choice'}>>) {
+  function toggle(i: number) {
+    if (!step.multi) return onChange({kind: 'choice', picked: [i]})
+    const picked = answer.picked.includes(i) ? answer.picked.filter((p) => p !== i) : [...answer.picked, i]
+    onChange({kind: 'choice', picked})
+  }
+
   return (
-    <div className="ls-stack" role="radiogroup" aria-label={step.prompt}>
-      {step.options.map((opt, i) => {
-        const selected = answer.picked === i
-        const isAnswer = i === step.answer
-        const state = locked
-          ? isAnswer
-            ? 'is-correct'
+    <div>
+      {step.multi && <p className="ls-hint">Mehrere Antworten sind richtig.</p>}
+      <div className="ls-stack" role={step.multi ? 'group' : 'radiogroup'} aria-label={step.prompt}>
+        {step.options.map((opt, i) => {
+          const selected = answer.picked.includes(i)
+          const isAnswer = step.answers.includes(i)
+          const state = locked
+            ? isAnswer
+              ? 'is-correct'
+              : selected
+                ? 'is-wrong'
+                : 'is-dim'
             : selected
-              ? 'is-wrong'
-              : 'is-dim'
-          : selected
-            ? 'is-selected'
-            : ''
-        return (
-          <button
-            key={opt}
-            type="button"
-            role="radio"
-            aria-checked={selected}
-            disabled={locked}
-            className={`ls-choice ${state}`}
-            onClick={() => onChange({kind: 'choice', picked: i})}
-          >
-            <span className="ls-key">{i + 1}</span>
-            <span>{opt}</span>
-          </button>
-        )
-      })}
+              ? 'is-selected'
+              : ''
+          return (
+            <button
+              key={`${i}-${opt}`}
+              type="button"
+              role={step.multi ? 'checkbox' : 'radio'}
+              aria-checked={selected}
+              disabled={locked}
+              className={`ls-choice ${state}`}
+              onClick={() => toggle(i)}
+            >
+              <span className="ls-key">{i + 1}</span>
+              <span>{opt}</span>
+            </button>
+          )
+        })}
+      </div>
     </div>
+  )
+}
+
+// ─── Schätzfrage / Freitext ───────────────────────────────────────────────────
+
+export function GuessView({step, answer, locked, onChange}: ViewProps<GuessStep, Extract<Answer, {kind: 'guess'}>>) {
+  return (
+    <input
+      className="ls-input"
+      type="text"
+      inputMode="decimal"
+      autoComplete="off"
+      autoFocus
+      disabled={locked}
+      value={answer.value}
+      placeholder="Deine Zahl"
+      aria-label={step.prompt}
+      onChange={(e) => onChange({kind: 'guess', value: e.target.value})}
+    />
+  )
+}
+
+export function TextView({step, answer, locked, onChange}: ViewProps<TextStep, Extract<Answer, {kind: 'text'}>>) {
+  return (
+    <textarea
+      className="ls-input ls-textarea"
+      rows={4}
+      disabled={locked}
+      value={answer.value}
+      placeholder="Deine Antwort …"
+      aria-label={step.prompt}
+      onChange={(e) => onChange({kind: 'text', value: e.target.value})}
+    />
   )
 }
 

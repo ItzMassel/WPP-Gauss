@@ -8,17 +8,18 @@ An educational app for learning about Gauß (the mathematician), where users ear
 
 ## Project Structure
 
-This is a monorepo with two workspaces:
+This is a monorepo with three workspaces:
 
 - **`web/`** — React 19 frontend (Vite + TypeScript + Tailwind CSS v4)
 - **`studio/`** — Sanity CMS studio for content management
+- **`server/`** — Express + PostgreSQL API for user accounts and Gauß-Punkte (schema in `db/schema.sql`; DB lives on the `chessperiment` SSH host, bound to localhost — `npm run dev` also starts the API and the SSH tunnel to the DB, config in `server/.env.local`)
 
 ## Commands
 
 Run from the repo root:
 
 ```bash
-npm run dev           # Start both web and studio concurrently
+npm run dev           # Start web, studio, API server and DB tunnel concurrently
 npm run dev:web       # Web frontend only 
 Vite dev server)
 npm run dev:studio    # Sanity studio only
@@ -47,7 +48,7 @@ npm run manage        # Open Sanity project management
 
 **Studio (`web/studio/`):** Sanity v3 CMS studio. Content schemas are defined in `studio/src/schemaTypes/index.ts` — currently empty, add `SchemaTypeDefinition` objects there to define content types.
 
-The two workspaces are independent — they do not share code or dependencies. The root `package.json` only coordinates running them together via `concurrently`.
+The workspaces are independent — they do not share code or dependencies. The root `package.json` only coordinates running them together via `concurrently`.
 
 ## Color Theming
 

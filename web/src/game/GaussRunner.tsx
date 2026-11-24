@@ -1,4 +1,5 @@
 import {useEffect, useRef, useState} from 'react'
+import {useAuth} from '../auth/AuthContext'
 import Phaser from 'phaser'
 import {
   GameScene,
@@ -14,9 +15,13 @@ import {LEVELS} from './data/levels'
 import {MAX_HP} from './data/physics'
 import type {MathQuestion} from './data/questions'
 
+/** Gauß-Punkte pro richtig gelöstem Portal. */
+const POINTS_PER_PORTAL = 5
+
 export default function GaussRunner() {
   const containerRef = useRef<HTMLDivElement>(null)
   const gameRef = useRef<Phaser.Game | null>(null)
+  const {awardPoints} = useAuth()
   const [question, setQuestion] = useState<MathQuestion | null>(null)
   const [input, setInput] = useState('')
   const [wrong, setWrong] = useState(false)
@@ -71,6 +76,7 @@ export default function GaussRunner() {
     const correct = Number(input) === question.answer
     if (correct) {
       gameRef.current?.events.emit(EVT_ANSWER, true)
+      void awardPoints('game', `level-${level?.index ?? 0}`, POINTS_PER_PORTAL)
       setQuestion(null)
     } else {
       setWrong(true)

@@ -28,7 +28,7 @@ export default function QuizPage() {
     client
       .fetch<Lecture[]>(`*[_type == "lecture"] | order(order asc) {
         _id, title, description, order,
-        "questionCount": count(questions)
+        "questionCount": count(questions[@->type in ["text", "multiplechoice", "sort", "guess", "yesno"]])
       }`)
       .then((data) => {
         setLectures(data ?? [])

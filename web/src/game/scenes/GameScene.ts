@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 import {Player} from '../entities/Player'
 import {Portal} from '../entities/Portal'
 import {Obstacle} from '../entities/Obstacle'
+import {GRASS_CROP_RATIO, Terrain} from '../entities/Terrain'
 import colors from '../../theme/colors'
 import {randomQuestion, type MathQuestion} from '../data/questions'
 import {LEVELS, LEVEL_DURATION, type LevelEvent} from '../data/levels'
@@ -52,6 +53,7 @@ export class GameScene extends Phaser.Scene {
   private player!: Player
   private obstacles: Obstacle[] = []
   private portals: Portal[] = []
+  private terrain!: Terrain
   private paused = false
   private activePortal: Portal | null = null
 
@@ -95,7 +97,7 @@ export class GameScene extends Phaser.Scene {
     // Boden: dünner Grasstreifen oben (nur der grüne Teil der grass.jpg-Textur),
     // darunter die gekachelte dirt.jpg-Textur bis zum unteren Rand.
     const grassImage = this.textures.get('grass').getSourceImage() as HTMLImageElement
-    const grassCropHeight = Math.round(grassImage.height * (160 / 639))
+    const grassCropHeight = Math.round(grassImage.height * GRASS_CROP_RATIO)
     this.textures.get('grass').add('top', 0, 0, 0, grassImage.width, grassCropHeight)
 
     const grassTileScale = GRASS_STRIP_HEIGHT / grassCropHeight
@@ -116,13 +118,23 @@ export class GameScene extends Phaser.Scene {
     ;(grassSprite.body as Phaser.Physics.Arcade.StaticBody).setSize(GAME_WIDTH * 2, GRASS_STRIP_HEIGHT)
     ;(dirtSprite.body as Phaser.Physics.Arcade.StaticBody).setSize(GAME_WIDTH * 2, dirtHeight)
 
-    this.player = new Player(this, PLAYER_X, GROUND_TOP_Y, () =>
-      this.obstacles
-        .filter((obstacle) => obstacle.type === 'ground')
-        .map((obstacle) => ({
-          left: obstacle.rect.x - obstacle.rect.width / 2,
-          right: obstacle.rect.x + obstacle.rect.width / 2,
-        })),
+    // Gelände aus generateTerrain() (data/terrain.ts): Blöcke auf dem Basisboden, scrollen mit der Welt.
+    this.terrain = new Terrain(this, {groundTopY: GROUND_TOP_Y, viewWidth: GAME_WIDTH, grassStripHeight: GRASS_STRIP_HEIGHT})
+    this.terrain.load(this.levelIndex)
+
+    this.player = new Player(
+      this,
+      PLAYER_X,
+      GROUND_TOP_Y,
+      () =>
+        this.obstacles
+          .filter((obstacle) => obstacle.type === 'ground')
+          .map((obstacle) => ({
+            left: obstacle.rect.x - obstacle.rect.width / 2,
+            right: obstacle.rect.x + obstacle.rect.width / 2,
+          })),
+      this.terrain,
+      () => this.hitTerrain(),
     )
     this.physics.add.collider(this.player.rect, ground)
 
@@ -205,18 +217,20 @@ export class GameScene extends Phaser.Scene {
   /** Rein dekorative Pflanze, ohne Kollision — sitzt oben auf dem Grasstreifen. */
   private spawnPlant(): void {
     const scale = PLANT_HEIGHT / (this.textures.get('plant').getSourceImage() as HTMLImageElement).height
-    const plant = this.add.image(SPAWN_X, GROUND_TOP_Y, 'plant').setOrigin(0.5, 1).setScale(scale)
+    const plant = this.add.image(SPAWN_X, this.terrain.groundY(SPAWN_X - 1, SPAWN_X + 1), 'plant').setOrigin(0.5, 1).setScale(scale)
     plant.setDepth(-1) // hinter dem Spieler
     this.plants.push(plant)
   }
 
   private spawnEvent(event: LevelEvent): void {
+    // Hindernisse und Portale stehen auf dem Boden/Hügel, der an ihrem Spawn-Punkt liegt.
+    const floorY = this.terrain.groundY(SPAWN_X - event.width / 2, SPAWN_X + event.width / 2)
     if (event.kind === 'portal') {
-      const portal = new Portal(this, SPAWN_X, GAME_HEIGHT - GROUND_HEIGHT - 45)
+      const portal = new Portal(this, SPAWN_X, floorY - 45)
       this.portals.push(portal)
       this.physics.add.overlap(this.player.rect, portal.rect, () => this.hitPortal(portal))
     } else {
-      const obstacle = new Obstacle(this, event.kind, SPAWN_X, GROUND_TOP_Y)
+      const obstacle = new Obstacle(this, event.kind, SPAWN_X, floorY)
       this.obstacles.push(obstacle)
       this.physics.add.overlap(this.player.rect, obstacle.rect, () => this.hitObstacle(obstacle))
     }
@@ -225,7 +239,16 @@ export class GameScene extends Phaser.Scene {
   private hitObstacle(obstacle: Obstacle): void {
     if (this.paused || obstacle.hit) return
     obstacle.hit = true
+    this.takeHit()
+  }
 
+  /** Gauß läuft seitlich gegen einen Geländeblock. */
+  private hitTerrain(): void {
+    if (this.paused) return
+    this.takeHit()
+  }
+
+  private takeHit(): void {
     this.hp -= 1
     this.game.events.emit(EVT_HP, this.hp)
     this.bounceBack()
@@ -242,6 +265,7 @@ export class GameScene extends Phaser.Scene {
   private bounceBack(): void {
     for (const obstacle of this.obstacles) obstacle.rect.x += KNOCKBACK_DISTANCE
     for (const portal of this.portals) portal.rect.x += KNOCKBACK_DISTANCE
+    this.terrain.scroll -= KNOCKBACK_DISTANCE
     this.levelElapsed = Math.max(0, this.levelElapsed - KNOCKBACK_DISTANCE / SCROLL_SPEED)
     this.worldSpeed = 0
     this.hechtBoost = 0
@@ -272,6 +296,7 @@ export class GameScene extends Phaser.Scene {
     this.hp = MAX_HP
     this.game.events.emit(EVT_HP, this.hp)
 
+    this.terrain.load(this.levelIndex)
     this.player.reset(PLAYER_X)
 
     this.physics.resume()
@@ -312,6 +337,7 @@ export class GameScene extends Phaser.Scene {
     this.levelElapsed = 0
     this.eventPointer = 0
 
+    this.terrain.load(this.levelIndex)
     this.cameras.main.setBackgroundColor(LEVELS[this.levelIndex].background)
     this.announceLevel(false)
   }
@@ -336,6 +362,8 @@ export class GameScene extends Phaser.Scene {
     for (const obstacle of this.obstacles) obstacle.body.setVelocityX(-speed)
     for (const portal of this.portals) portal.body.setVelocityX(-speed)
     for (const plant of this.plants) plant.x -= speed * dt
+    this.terrain.scroll += speed * dt
+    this.terrain.render()
     this.background.tilePositionX += speed * dt * BACKGROUND_PARALLAX
 
     this.plantTimer -= dt

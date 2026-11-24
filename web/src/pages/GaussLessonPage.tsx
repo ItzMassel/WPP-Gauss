@@ -1,19 +1,21 @@
 import {useEffect, useState, type CSSProperties} from 'react'
 import {useNavigate} from 'react-router-dom'
-import {ChoiceView, FillView, InfoView, MatchView, OrderView} from '../lesson/exercises'
+import {useAuth} from '../auth/AuthContext'
+import {client} from '../sanityClient'
+import {ChoiceView, FillView, GuessView, InfoView, MatchView, OrderView, TextView} from '../lesson/exercises'
 import {
   consolation,
   correctText,
+  buildSteps,
   emptyAnswer,
-  exerciseCount,
   instruction,
   isCorrect,
   isReady,
-  lessonSteps,
   lessonTitle,
   pick,
   praise,
   type Answer,
+  type SanityLectureDoc,
   type Step,
 } from '../lesson/lessonData'
 import '../lesson/lesson.css'
@@ -31,7 +33,7 @@ interface QueueItem {
 type Status = 'idle' | 'correct' | 'wrong'
 type Phase = 'play' | 'done'
 
-const freshQueue = (): QueueItem[] => lessonSteps.map((step) => ({step, attempt: 0}))
+const freshQueue = (steps: Step[]): QueueItem[] => steps.map((step) => ({step, attempt: 0}))
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -130,18 +132,93 @@ function Confetti() {
 
 // ─── Seite ────────────────────────────────────────────────────────────────────
 
+const LESSON_QUERY = `*[_type == "lecture"] | order(order asc, _createdAt asc) {
+  _id, title,
+  questions[]-> {
+    _id, question, type, explanation,
+    options[] { _key, label, correct },
+    multipleCorrect, correctAnswer,
+    correctNumber, rangeMin, rangeMax,
+    sortItems,
+    fillTemplate, fillAnswers, fillDistractors,
+    matchPairs[] { left, right },
+    infoEmblem, infoText, infoFacts[] { label, value }
+  }
+}`
+
+/** Lädt alle Vorlesungen aus Sanity und startet daraus die Lektion. */
 export default function GaussLessonPage() {
   const navigate = useNavigate()
-  const total = lessonSteps.length
+  const [steps, setSteps] = useState<Step[] | null>(null)
+  const [error, setError] = useState(false)
+  const [attempt, setAttempt] = useState(0)
 
-  const [queue, setQueue] = useState<QueueItem[]>(freshQueue)
+  useEffect(() => {
+    let cancelled = false
+    client
+      .fetch<SanityLectureDoc[]>(LESSON_QUERY)
+      .then((lectures) => !cancelled && setSteps(buildSteps(lectures ?? [])))
+      .catch(() => !cancelled && setError(true))
+    return () => {
+      cancelled = true
+    }
+  }, [attempt])
+
+  if (steps && steps.some((s) => s.kind !== 'info')) return <Lesson steps={steps} />
+
+  return (
+    <div className="ls-root">
+      <main className="ls-main">
+        <div className="ls-end">
+          {error ? (
+            <>
+              <h2>Lektion konnte nicht geladen werden</h2>
+              <p className="ls-end-sub">Prüfe deine Verbindung und versuche es noch einmal.</p>
+              <div className="ls-actions">
+                <button className="ls-btn" onClick={() => {
+                    setError(false)
+                    setAttempt((n) => n + 1)
+                  }}>
+                  Erneut versuchen
+                </button>
+                <button className="ls-btn ls-btn-ghost" onClick={() => navigate('/')}>
+                  Zur Startseite
+                </button>
+              </div>
+            </>
+          ) : steps ? (
+            <>
+              <h2>Noch keine Aufgaben</h2>
+              <p className="ls-end-sub">In Sanity sind noch keine Fragen in Vorlesungen eingetragen.</p>
+              <div className="ls-actions">
+                <button className="ls-btn ls-btn-ghost" onClick={() => navigate('/')}>
+                  Zur Startseite
+                </button>
+              </div>
+            </>
+          ) : (
+            <p className="ls-end-sub">Lektion wird geladen …</p>
+          )}
+        </div>
+      </main>
+    </div>
+  )
+}
+
+function Lesson({steps}: {steps: Step[]}) {
+  const navigate = useNavigate()
+  const {awardPoints} = useAuth()
+  const total = steps.length
+  const exerciseCount = steps.filter((s) => s.kind !== 'info').length
+
+  const [queue, setQueue] = useState<QueueItem[]>(() => freshQueue(steps))
   const [pos, setPos] = useState(0)
   const [completed, setCompleted] = useState(0)
   const [hearts, setHearts] = useState(MAX_HEARTS)
   const [xp, setXp] = useState(0)
   const [streak, setStreak] = useState(0)
   const [firstTry, setFirstTry] = useState(0)
-  const [answer, setAnswer] = useState<Answer>(() => emptyAnswer(lessonSteps[0]))
+  const [answer, setAnswer] = useState<Answer>(() => emptyAnswer(steps[0]))
   const [status, setStatus] = useState<Status>('idle')
   const [message, setMessage] = useState('')
   const [phase, setPhase] = useState<Phase>('play')
@@ -207,7 +284,7 @@ export default function GaussLessonPage() {
   }
 
   function restart() {
-    const q = freshQueue()
+    const q = freshQueue(steps)
     setQueue(q)
     setPos(0)
     setCompleted(0)
@@ -228,12 +305,19 @@ export default function GaussLessonPage() {
     function onKey(e: KeyboardEvent) {
       if (leaving || phase !== 'play' || failed || !step) return
       if (e.key === 'Enter') {
+        // Im Freitextfeld erzeugt Enter einen Zeilenumbruch, Strg/Cmd+Enter prüft.
+        if (e.target instanceof HTMLTextAreaElement && !e.ctrlKey && !e.metaKey) return
         e.preventDefault() // verhindert, dass ein fokussierter Button zusätzlich auslöst
         if (status !== 'idle' || isInfo) handleContinue()
         else handleCheck()
       } else if (status === 'idle' && step.kind === 'choice' && /^[1-9]$/.test(e.key)) {
         const idx = Number(e.key) - 1
-        if (idx < step.options.length) setAnswer({kind: 'choice', picked: idx})
+        if (idx < step.options.length) {
+          const picked = !step.multi ? [idx] : answer.kind === 'choice' && answer.picked.includes(idx)
+            ? answer.picked.filter((p) => p !== idx)
+            : [...(answer.kind === 'choice' ? answer.picked : []), idx]
+          setAnswer({kind: 'choice', picked})
+        }
       }
     }
     window.addEventListener('keydown', onKey)
@@ -241,6 +325,11 @@ export default function GaussLessonPage() {
   })
 
   const finalXp = xp + (hearts === MAX_HEARTS ? XP_PERFECT : 0)
+
+  // Lektion zahlt einmalig aus (Server ignoriert Wiederholungen).
+  useEffect(() => {
+    if (phase === 'done' && finalXp > 0) void awardPoints('lesson', 'gauss-summe', finalXp)
+  }, [phase]) // eslint-disable-line react-hooks/exhaustive-deps
   const accuracy = exerciseCount > 0 ? Math.round((firstTry / exerciseCount) * 100) : 100
   const showBar = phase === 'play' && !failed && !!step
 
@@ -302,6 +391,12 @@ export default function GaussLessonPage() {
 
             {step.kind === 'choice' && answer.kind === 'choice' && (
               <ChoiceView step={step} answer={answer} locked={status !== 'idle'} onChange={setAnswer} />
+            )}
+            {step.kind === 'guess' && answer.kind === 'guess' && (
+              <GuessView step={step} answer={answer} locked={status !== 'idle'} onChange={setAnswer} />
+            )}
+            {step.kind === 'text' && answer.kind === 'text' && (
+              <TextView step={step} answer={answer} locked={status !== 'idle'} onChange={setAnswer} />
             )}
             {step.kind === 'fill' && answer.kind === 'fill' && (
               <FillView step={step} answer={answer} locked={status !== 'idle'} onChange={setAnswer} />
