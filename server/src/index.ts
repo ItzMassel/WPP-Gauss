@@ -133,12 +133,31 @@ app.post('/api/points', requireUser, async (req, res) => {
   res.json({awarded: rowCount === 1 ? points : 0, totalPoints: await totalPoints(user.id)})
 })
 
-app.get('/api/leaderboard', async (_req, res) => {
+app.get('/api/leaderboard', async (req, res) => {
+  const ranked = `SELECT user_id, username, total_points,
+                         RANK() OVER (ORDER BY total_points DESC)::integer AS rank
+                  FROM user_points WHERE total_points > 0`
+
   const {rows} = await pool.query(
-    `SELECT username, total_points AS "totalPoints" FROM user_points
-     WHERE total_points > 0 ORDER BY total_points DESC, username LIMIT 20`,
+    `WITH ranked AS (${ranked})
+     SELECT username, total_points AS "totalPoints", rank FROM ranked
+     ORDER BY total_points DESC, username LIMIT 20`,
   )
-  res.json({leaderboard: rows})
+
+  // The signed-in user's own position, so it shows even outside the top 20.
+  let me: {username: string; totalPoints: number; rank: number | null} | null = null
+  if (req.user) {
+    const own = await pool.query<{totalPoints: number; rank: number}>(
+      `WITH ranked AS (${ranked})
+       SELECT total_points AS "totalPoints", rank FROM ranked WHERE user_id = $1`,
+      [req.user.id],
+    )
+    me = own.rows[0]
+      ? {username: req.user.username, ...own.rows[0]}
+      : {username: req.user.username, totalPoints: 0, rank: null}
+  }
+
+  res.json({leaderboard: rows, me})
 })
 
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {

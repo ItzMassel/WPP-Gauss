@@ -8,6 +8,7 @@ import LecturePage from './pages/LecturePage.tsx'
 import GamePage from './pages/GamePage.tsx'
 import GaussLessonPage from './pages/GaussLessonPage.tsx'
 import AuthPage from './pages/AuthPage.tsx'
+import LeaderboardPage from './pages/LeaderboardPage.tsx'
 import {AuthProvider} from './auth/AuthContext'
 import {applyTheme} from './theme/applyTheme'
 
@@ -23,6 +24,7 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/quiz/:lectureId" element={<LecturePage />} />
         <Route path="/spiel" element={<GamePage />} />
         <Route path="/lektion" element={<GaussLessonPage />} />
+        <Route path="/rangliste" element={<LeaderboardPage />} />
         <Route path="/anmelden" element={<AuthPage />} />
       </Routes>
       </AuthProvider>

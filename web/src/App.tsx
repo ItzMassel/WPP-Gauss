@@ -117,6 +117,16 @@ export default function App() {
           >
             Spiel (Beta)
           </button>
+          <button
+            onClick={() => navigate('/rangliste')}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              fontSize: '0.7rem', letterSpacing: '0.12em', textTransform: 'uppercase',
+              ...S.accent, opacity: 0.85,
+            }}
+          >
+            Rangliste
+          </button>
           <button className="btn-outline" style={{ padding: '0.4rem 1rem', fontSize: '0.7rem' }} onClick={() => navigate('/anmelden')}>
             {user ? `${user.username} · ${totalPoints} Punkte` : 'Anmelden'}
           </button>

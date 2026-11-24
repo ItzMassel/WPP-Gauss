@@ -133,7 +133,7 @@ function Confetti() {
 // ─── Seite ────────────────────────────────────────────────────────────────────
 
 const LESSON_QUERY = `*[_type == "lecture"] | order(order asc, _createdAt asc) {
-  _id, title,
+  _id, title, description,
   questions[]-> {
     _id, question, type, explanation,
     options[] { _key, label, correct },

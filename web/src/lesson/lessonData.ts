@@ -106,6 +106,7 @@ export interface SanityQuestionDoc {
 export interface SanityLectureDoc {
   _id: string
   title: string
+  description?: string
   questions: (SanityQuestionDoc | null)[] | null
 }
 
@@ -154,12 +155,28 @@ export function buildSteps(lectures: SanityLectureDoc[]): Step[] {
   const seen = new Set<string>()
   const steps: Step[] = []
   for (const lecture of lectures) {
+    const infos: Step[] = []
+    const exercises: Step[] = []
     for (const q of lecture.questions ?? []) {
       if (!q || seen.has(q._id)) continue
       seen.add(q._id)
       const step = toStep(q, lecture.title)
-      if (step) steps.push(step)
+      if (step) (step.kind === 'info' ? infos : exercises).push(step)
     }
+    // Erst lernen, dann abfragen: Info-Karten stehen immer vor den Aufgaben ihrer Vorlesung.
+    // Ohne eigene Info-Karte dient die Beschreibung der Vorlesung als Einstieg.
+    if (infos.length === 0 && exercises.length > 0 && lecture.description?.trim()) {
+      infos.push({
+        id: `${lecture._id}-intro`,
+        section: lecture.title,
+        kind: 'info',
+        title: lecture.title,
+        emblem: '',
+        text: lecture.description.trim(),
+        facts: [],
+      })
+    }
+    steps.push(...infos, ...exercises)
   }
   return steps
 }
