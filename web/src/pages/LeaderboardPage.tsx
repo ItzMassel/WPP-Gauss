@@ -168,7 +168,7 @@ export default function LeaderboardPage() {
             <p style={{...S.muted, marginBottom: '1.5rem'}}>
               Noch hat niemand Punkte gesammelt. Sei der Erste!
             </p>
-            <button className="btn-primary" onClick={() => navigate('/quiz')}>
+            <button className="btn-primary" onClick={() => navigate('/lektion')}>
               Jetzt lernen
             </button>
           </div>

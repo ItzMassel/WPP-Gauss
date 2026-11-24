@@ -546,10 +546,7 @@ function Lesson({steps}: {steps: Step[]}) {
               </div>
               {hearts === MAX_HEARTS && <p className="ls-bonus">Perfekte Lektion: +{XP_PERFECT} Bonus-Punkte</p>}
               <div className="ls-actions">
-                <button className="ls-btn" onClick={() => navigate('/quiz')}>
-                  Zu den Quizzen
-                </button>
-                <button className="ls-btn ls-btn-ghost" onClick={() => navigate('/')}>
+                <button className="ls-btn" onClick={() => navigate('/')}>
                   Zur Startseite
                 </button>
               </div>

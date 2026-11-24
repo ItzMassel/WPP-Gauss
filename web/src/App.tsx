@@ -88,16 +88,6 @@ export default function App() {
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.9rem' }}>
           <button
-            onClick={() => navigate('/quiz')}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-              fontSize: '0.7rem', letterSpacing: '0.12em', textTransform: 'uppercase',
-              ...S.accent, opacity: 0.85,
-            }}
-          >
-            Quizzes
-          </button>
-          <button
             onClick={() => navigate('/lektion')}
             style={{
               background: 'none', border: 'none', cursor: 'pointer', padding: 0,
@@ -192,7 +182,7 @@ export default function App() {
 
           {/* CTAs */}
           <div className="anim-fade-up d5" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '2.75rem', flexWrap: 'wrap' }}>
-            <button className="btn-primary" onClick={() => navigate('/quiz')}>Jetzt lernen</button>
+            <button className="btn-primary" onClick={() => navigate('/lektion')}>Jetzt lernen</button>
             <span style={{ fontSize: '0.82rem', ...S.muted, letterSpacing: '0.03em' }}>
               Kostenlos · Keine Anmeldung nötig
             </span>
@@ -323,7 +313,7 @@ export default function App() {
               Thema bringt dir Punkte. Verfolge deinen Fortschritt und beweise,
               dass du ein würdiger Schüler des Princeps Mathematicorum bist.
             </p>
-            <button className="btn-outline" onClick={() => navigate('/quiz')}>Jetzt lernen</button>
+            <button className="btn-outline" onClick={() => navigate('/lektion')}>Jetzt lernen</button>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.9rem' }}>
