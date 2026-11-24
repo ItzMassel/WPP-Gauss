@@ -791,19 +791,7 @@ function Guess({
     <div>
       {(min !== undefined || max !== undefined) && (
         <p style={{fontSize: '0.85rem', ...S.faint, marginBottom: '1rem', letterSpacing: '0.04em'}}>
-          Schätze eine Zahl{' '}
-          {min !== undefined && max !== undefined && (
-            <>
-              zwischen{' '}
-              <strong style={{color: 'var(--color-text)'}}>
-                {min}
-              </strong>{' '}
-              und{' '}
-              <strong style={{color: 'var(--color-text)'}}>
-                {max}
-              </strong>
-            </>
-          )}
+          Schätze eine Zahl
         </p>
       )}
       <input
