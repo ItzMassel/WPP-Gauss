@@ -1,5 +1,6 @@
 import {useEffect, useState, type CSSProperties} from 'react'
 import {useNavigate} from 'react-router-dom'
+import {api} from '../auth/api'
 import {useAuth} from '../auth/AuthContext'
 import {client} from '../sanityClient'
 import {ChoiceView, FillView, GuessView, InfoView, MatchView, OrderView, TextView} from '../lesson/exercises'
@@ -19,6 +20,20 @@ import {
   type Step,
 } from '../lesson/lessonData'
 import '../lesson/lesson.css'
+
+const LESSON_ID = 'gauss-summe'
+const COOLDOWN_MS = 48 * 60 * 60 * 1000
+const doneKey = `gauss-lesson-done:${LESSON_ID}`
+
+/** Zeitpunkt, ab dem die Lektion wieder möglich ist (lokal gemerkt; der Server prüft zusätzlich). */
+function localUnlockAt(): number {
+  const done = Number(localStorage.getItem(doneKey))
+  return done > 0 ? done + COOLDOWN_MS : 0
+}
+
+function formatUnlock(ts: number): string {
+  return new Date(ts).toLocaleString('de-DE', {weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'}) + ' Uhr'
+}
 
 const MAX_HEARTS = 5
 const XP_CLEAN = 10
@@ -152,6 +167,25 @@ export default function GaussLessonPage() {
   const [steps, setSteps] = useState<Step[] | null>(null)
   const [error, setError] = useState(false)
   const [attempt, setAttempt] = useState(0)
+  const {user, loading: authLoading} = useAuth()
+  const [unlockAt, setUnlockAt] = useState<number | null>(null) // null = noch unbekannt
+
+  // Die Lektion ist nach dem Abschluss 2 Tage gesperrt (lokal + serverseitig pro Konto).
+  useEffect(() => {
+    if (authLoading) return
+    let cancelled = false
+    const local = localUnlockAt()
+    if (!user) {
+      setUnlockAt(local)
+      return
+    }
+    api<{availableAt: string | null}>(`/cooldown?source=lesson&sourceRef=${LESSON_ID}`)
+      .then((r) => !cancelled && setUnlockAt(Math.max(local, r.availableAt ? Date.parse(r.availableAt) : 0)))
+      .catch(() => !cancelled && setUnlockAt(local))
+    return () => {
+      cancelled = true
+    }
+  }, [user, authLoading])
 
   useEffect(() => {
     let cancelled = false
@@ -164,7 +198,27 @@ export default function GaussLessonPage() {
     }
   }, [attempt])
 
-  if (steps && steps.some((s) => s.kind !== 'info')) return <Lesson steps={steps} />
+  if (unlockAt !== null && unlockAt > Date.now()) {
+    return (
+      <div className="ls-root">
+        <main className="ls-main">
+          <div className="ls-end">
+            <h2>Lektion bereits gemacht</h2>
+            <p className="ls-end-sub">
+              Diese Lektion kannst du nur alle zwei Tage machen. Wieder verfügbar ab {formatUnlock(unlockAt)}.
+            </p>
+            <div className="ls-actions">
+              <button className="ls-btn" onClick={() => navigate('/')}>
+                Zur Startseite
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  if (steps && unlockAt !== null && steps.some((s) => s.kind !== 'info')) return <Lesson steps={steps} />
 
   return (
     <div className="ls-root">
@@ -326,9 +380,11 @@ function Lesson({steps}: {steps: Step[]}) {
 
   const finalXp = xp + (hearts === MAX_HEARTS ? XP_PERFECT : 0)
 
-  // Lektion zahlt einmalig aus (Server ignoriert Wiederholungen).
+  // Abschluss merken und Punkte auszahlen (Server zahlt höchstens alle 48 h).
   useEffect(() => {
-    if (phase === 'done' && finalXp > 0) void awardPoints('lesson', 'gauss-summe', finalXp)
+    if (phase !== 'done') return
+    localStorage.setItem(doneKey, String(Date.now()))
+    if (finalXp > 0) void awardPoints('lesson', LESSON_ID, finalXp)
   }, [phase]) // eslint-disable-line react-hooks/exhaustive-deps
   const accuracy = exerciseCount > 0 ? Math.round((firstTry / exerciseCount) * 100) : 100
   const showBar = phase === 'play' && !failed && !!step
@@ -493,8 +549,8 @@ function Lesson({steps}: {steps: Step[]}) {
                 <button className="ls-btn" onClick={() => navigate('/quiz')}>
                   Zu den Quizzen
                 </button>
-                <button className="ls-btn ls-btn-ghost" onClick={restart}>
-                  Nochmal
+                <button className="ls-btn ls-btn-ghost" onClick={() => navigate('/')}>
+                  Zur Startseite
                 </button>
               </div>
             </div>

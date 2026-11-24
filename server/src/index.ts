@@ -92,6 +92,26 @@ app.get('/api/me', requireUser, async (req, res) => {
   res.json({user, totalPoints: await totalPoints(user.id)})
 })
 
+/** When the user may collect points for this source + ref again (null = now). */
+async function cooldownEnd(userId: string, source: string, sourceRef: string | null): Promise<Date | null> {
+  const hours = SOURCES[source]?.cooldownHours
+  if (!hours || !sourceRef) return null
+  const {rows} = await pool.query<{available_at: Date}>(
+    `SELECT max(created_at) + make_interval(hours => $4) AS available_at FROM point_events
+     WHERE user_id = $1 AND source = $2 AND source_ref = $3`,
+    [userId, source, sourceRef, hours],
+  )
+  const at = rows[0]?.available_at
+  return at && at.getTime() > Date.now() ? at : null
+}
+
+app.get('/api/cooldown', requireUser, async (req, res) => {
+  const source = str(req.query.source)
+  const sourceRef = str(req.query.sourceRef).slice(0, 200) || null
+  const at = await cooldownEnd(req.user!.id, source, sourceRef)
+  res.json({availableAt: at ? at.toISOString() : null})
+})
+
 app.post('/api/points', requireUser, async (req, res) => {
   const user = req.user!
   const source = str(req.body?.source)
@@ -107,17 +127,22 @@ app.post('/api/points', requireUser, async (req, res) => {
     res.status(400).json({error: 'Ungültige Punktzahl.'})
     return
   }
-  if (rule.once && !sourceRef) {
+  if ((rule.once || rule.cooldownHours) && !sourceRef) {
     res.status(400).json({error: 'sourceRef fehlt.'})
     return
   }
 
-  if (!rule.once) {
+  if (await cooldownEnd(user.id, source, sourceRef)) {
+    res.json({awarded: 0, totalPoints: await totalPoints(user.id)})
+    return
+  }
+
+  if (!rule.once && !rule.cooldownHours) {
     const {rows} = await pool.query<{earned: number}>(
       `SELECT COALESCE(SUM(points), 0)::integer AS earned FROM point_events
        WHERE user_id = $1 AND created_at > now() - interval '24 hours'
          AND source = ANY($2::text[])`,
-      [user.id, Object.keys(SOURCES).filter((s) => !SOURCES[s].once)],
+      [user.id, Object.keys(SOURCES).filter((s) => !SOURCES[s].once && !SOURCES[s].cooldownHours)],
     )
     if (rows[0].earned + points > DAILY_REPEATABLE_CAP) {
       res.status(429).json({error: 'Tageslimit für Gauß-Punkte erreicht.'})

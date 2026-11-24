@@ -43,7 +43,9 @@ CREATE TABLE IF NOT EXISTS sessions (
 
 CREATE INDEX IF NOT EXISTS sessions_user_idx ON sessions (user_id);
 
--- Quizzes and lessons pay out once per user and item.
+-- Quizzes pay out once per user and item. Lessons are repeatable every 48 hours
+-- (enforced by the API), so they must not be in this index.
+DROP INDEX IF EXISTS point_events_once_key;
 CREATE UNIQUE INDEX IF NOT EXISTS point_events_once_key
   ON point_events (user_id, source, source_ref)
-  WHERE source IN ('quiz', 'lesson');
+  WHERE source = 'quiz';
